@@ -3,9 +3,12 @@
 #include <QSqlField>
 #include <QSqlRecord>
 #include <QString>
+#include <QDebug>
 
 Q_DECLARE_OPAQUE_POINTER(PGresult*)
 Q_DECLARE_METATYPE(PGresult*)
+Q_DECLARE_OPAQUE_POINTER(PGconn*)
+Q_DECLARE_METATYPE(PGconn*)
 
 
 /**
@@ -70,7 +73,7 @@ QVariant KQPostgreSqlResult::data(int i)
         return QVariant(QString(value).toLongLong());
         break;
     case QVariant::Int:
-        return QVariant(QString(value).toInt());
+        return QVariant(atoi(value));
         break;
     case QVariant::Double:
         if (typeOid == 1700) {
@@ -143,21 +146,9 @@ bool KQPostgreSqlResult::reset(const QString &sqlquery)
     if (!driver()->isOpen() || driver()->isOpenError()) {
         return false;
     }
-    m_pResult = postgreDriver()->executePrepared(sqlquery);
-    ExecStatusType status = PQresultStatus(m_pResult);
-    if (status == PGRES_COMMAND_OK) {
-        setActive(true);
-        setSelect(false);
-        return true;
-    }
-    if (status == PGRES_TUPLES_OK) {
-        setActive(true);
-        setSelect(true);
-        setAt(QSql::BeforeFirstRow);
-        return true;
-    }
+    setQuery(sqlquery);
 
-    return false;
+    return exec();
 }
 
 /**
@@ -222,7 +213,9 @@ int KQPostgreSqlResult::numRowsAffected()
 
 /**
  * Override
- * Get a info record about the result.
+ * Get a info record about the result. A QSqlRecord object
+ * containing information about the query result.
+ * For instance: column name, data type
  * @return      A record with result information.
  */
 QSqlRecord KQPostgreSqlResult::record() const
@@ -253,16 +246,45 @@ QSqlRecord KQPostgreSqlResult::record() const
  * Override
  * Prepare a query for execution.
  * Let the DBMS parse the query with place holders and
- * execute them after values are set.
+ * execute them later with exec().
+ * Build a string from the hash code of a SQL statement.
+ * These hash code is used as statement name. With this
+ * name the prepared statement can be executed.
+ * The statement name is set as query. The exec() method
+ * must check if the query string is a prepared or a
+ * normal SQL statement.
  * @param query     The SQL query string to prepare.
  * @return          True if successfully prepared.
  */
 bool KQPostgreSqlResult::prepare(const QString &query)
 {
-    QString stmt = replacePlaceholders(query);
-    PGresult* result = postgreDriver()->prepareStatement(stmt, boundValueCount());
+    resetBindCount();
+    qDebug() << "Prepare: " << query;
+    bool ok = false;
+    QString stmt = replaceStandardPlaceholders(query, ok);
+    if (! ok) {
+        stmt = replaceNamedPlacholders(query, ok);
+    }
+    qDebug() << "Placeholder replaced: " << stmt;
+    uint hash = qHash(query);
+    QString stmtName = QString::number(hash);
+    setQuery(stmtName);
+    if (isPrepared(stmtName)) {
+        return true;
+    }
+    PGconn* pConnection = driver()->handle().value<PGconn*>();
+    PGresult* result = PQprepare(pConnection, stmtName.toLocal8Bit().data(), stmt.toLocal8Bit().data(), boundValueCount(), NULL);
+    ExecStatusType statusType = PQresultStatus(result);
+    PQclear(result);
+    if (statusType != PGRES_COMMAND_OK) {
+        QString databaseErr(PQerrorMessage(pConnection));
+        QString code(PQresStatus(statusType));
+        QSqlError error(QString("Could not prepare SQL statement !"), databaseErr, QSqlError::StatementError,code);
+        setLastError(error);
+        return false;
+    }
 
-    return PQresultStatus(result) == PGRES_COMMAND_OK;
+    return true;
 }
 
 /**
@@ -271,20 +293,15 @@ bool KQPostgreSqlResult::prepare(const QString &query)
  */
 bool KQPostgreSqlResult::exec()
 {
-    QVector<QVariant> paramVector = boundValues();
-    // Allocate memory.
-    char** values = cstringArrayOfSize(paramVector.size());
-    int* valueLength = new int[paramVector.size()];
-    for (int index=0; index<paramVector.size(); ++index) {
-        QString value = variantToString(paramVector.value(index));
-        values[index] = stringCopy(value);
-        valueLength[index] = value.length();
+    qDebug() << "exec(): " << lastQuery();
+    if (lastQuery().at(0).isDigit()) {
+        // Is a prepared statment.
+        executePreparedStmt();
+    } else {
+        // Is a SQL query.
+        PGconn* pConnection = driver()->handle().value<PGconn*>();
+        m_pResult = PQexec(pConnection, lastQuery().toLocal8Bit().data());
     }
-    clearResult();
-    m_pResult = postgreDriver()->executePrepared(paramVector.size(), values, valueLength);
-    // Free allocated memory.
-    freeCStringArray(values, paramVector.size());
-    delete valueLength;
     ExecStatusType status = PQresultStatus(m_pResult);
     if (status == PGRES_TUPLES_OK) {
         setActive(true);
@@ -384,37 +401,82 @@ void KQPostgreSqlResult::clearResult()
 }
 
 /**
- * Protected
- * Get the Postgre driver pointer.
- * @return      A pointer to the Postgre driver.
- */
-const KQPostgreSqlDriver *KQPostgreSqlResult::postgreDriver() const
-{
-    return reinterpret_cast<const KQPostgreSqlDriver*>(driver());
-}
-
-/**
- * Searches for placeholders and replace them with PostgreSql placeholders.
- * Relaced are either '?' and ':identifier'. They are searched by regular
- * expressions. Found placeholders are replaced with: '$1','$2','$3'...
+ * Serches for SQL placeholders like '?'.
+ * Found placeholders are replaced with: '$1','$2','$3'...
+ * The Dollar symbol and the number of placeholer is as
+ * it is managed by the PosgreSql server.
  * @param sqlStatement      A statement with placeholders.
  * @return sqlStatement     With PostgreSql placeholders.
  */
-QString KQPostgreSqlResult::replacePlaceholders(QString sqlStatement) const
+QString KQPostgreSqlResult::replaceStandardPlaceholders(QString sqlStatement, bool& ok) const
 {
-    int numPlaceholder = 1, position = 0;
+    // Replace standard placeholders '?' if they are used.
+    int position = sqlStatement.indexOf(QChar('?'), 0);
+    ok = false;
+    if (position < 0) {
+        return sqlStatement;
+    }
+    int numPlaceholder = 1;
     QChar currentPlaceholder[2] = { QChar('$'), QChar('0') };
-    while (true) {
+    while (position > 0) {
         currentPlaceholder[1] = QChar('0' + numPlaceholder);
-        position = sqlStatement.indexOf(QChar('?'), position);
-        if (position < 0) {
-            break;
-        }
         sqlStatement.replace(position, 1, currentPlaceholder, 2);
         ++numPlaceholder;
+        position = sqlStatement.indexOf(QChar('?'), position);
+    }
+    ok = true;
+
+    return sqlStatement;
+}
+
+/**
+ * Replaces named placeholders in SQL statements. Placeholders are
+ * replaced with PosgreSql placeholders. They are named $1, $2, $3, ...
+ * @param sqlStatement      A SQL statement string.
+ * @param ok                Reference to a bool value. Is set to true if done.
+ * @return sqlStatement     The modified SQL statement.
+ */
+QString KQPostgreSqlResult::replaceNamedPlacholders(QString sqlStatement, bool &ok)
+{
+    int position = sqlStatement.indexOf(QChar(':'), 0);
+    ok = false;
+    if (position < 0) {
+        return sqlStatement;
+    }
+    int numPlaceHolder = 1;
+    while (position > 0) {
+        QString placeholder = QString('$').append(QString::number(numPlaceHolder));
+        QString placeholderName = replacePlaceholder(sqlStatement, position, placeholder);
+        bindValue(placeholderName, QVariant(), QSql::In);
+        position += placeholder.length();
+        position = sqlStatement.indexOf(QChar(':'), position);
+        ++numPlaceHolder;
     }
 
     return sqlStatement;
+}
+
+/**
+ * Parse the name of the placeholder in SQL query and replaces it with
+ * PosgreSql placeholder. ($1, $2, $3, ...)
+ * Start parsing from the given position. Gives back the end position
+ * of the placeholder. Placeholder starts with a colon and it ends
+ * with a none letter character.
+ * @param sqlStatement      The SQL statement with named placeholders.
+ * @param startPos          Position of a found colon which indicates a placeholder.
+ * @param placeholder       Placeholder string like '$1'.
+ * @return                  A string with the name of placeholder.
+ */
+QString KQPostgreSqlResult::replacePlaceholder(QString& sqlStatement, const int startPos, const QString& placeholder)
+{
+    int endPos = startPos + 1;
+    while (sqlStatement.at(endPos).isLetter() && endPos < sqlStatement.length()) {
+        ++endPos;
+    }
+    QString placeholderName = sqlStatement.mid(startPos, endPos - startPos);
+    sqlStatement.replace(startPos, endPos-startPos, placeholder);
+
+    return placeholderName;
 }
 
 /**
@@ -511,4 +573,60 @@ QString KQPostgreSqlResult::variantToString(const QVariant &value) const
     }
 
     return QString();
+}
+
+/**
+ * Reads from PostgreSql view 'pg_prepared_statements' all known
+ * prepared statements.
+ * Prepared statements get names. These names are read from the view.
+ * If the view of PostgreSql has stmtName than this statement was
+ * prepared and can be executed.
+ * @param stmtName      The statement name to search for.
+ * @return              True if statement is allready prepared.
+ */
+bool KQPostgreSqlResult::isPrepared(const QString &stmtName) const
+{
+    bool isStmtPrepared = false;
+    QVariant connectionHandle = driver()->handle();
+    PGconn* pConnection = connectionHandle.value<PGconn*>();
+    char* sqlSelect = "SELECT name FROM pg_prepared_statements";
+    PGresult* result = PQexec(pConnection, sqlSelect);
+    if (PQresultStatus(result) == PGRES_TUPLES_OK) {
+        int rowCount = PQntuples(result);
+        for (int row=0; row<rowCount; ++row) {
+            char* value = PQgetvalue(result, row, 0);
+            QString preparedStmtName(value);
+            if (stmtName == preparedStmtName) {
+                isStmtPrepared = true;
+                break;
+            }
+        }
+    }
+    PQclear(result);
+
+    return isStmtPrepared;
+}
+
+/**
+ * Execute a SQL statement which is allready prepared.
+ * @return
+ */
+void KQPostgreSqlResult::executePreparedStmt()
+{
+    clearResult();
+    QVector<QVariant> paramVector = boundValues();
+    qDebug() << "Values: " << paramVector;
+    // Allocate memory for bind values.
+    char** values = cstringArrayOfSize(paramVector.size());
+    int* valueLength = new int[paramVector.size()];
+    for (int index=0; index<paramVector.size(); ++index) {
+        QString value = variantToString(paramVector.value(index));
+        values[index] = stringCopy(value);
+        valueLength[index] = value.length();
+    }
+    PGconn* pConnection = driver()->handle().value<PGconn*>();
+    m_pResult = PQexecPrepared(pConnection, lastQuery().toLocal8Bit().data(), boundValueCount(), values, valueLength, NULL, 0);
+    // Free allocated memory.
+    freeCStringArray(values, paramVector.size());
+    delete[] valueLength;
 }

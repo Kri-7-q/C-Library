@@ -11,7 +11,6 @@ class KQPostgreSqlResult;
 
 class KQPostgreSqlDriver : public QSqlDriver
 {
-    friend class KQPostgreSqlResult;
 
 public:
     KQPostgreSqlDriver();
@@ -37,9 +36,6 @@ public:
     QSqlRecord record(const QString &tableName) const override;
 
 protected:
-    PGresult* executePrepared(const QString& stmtName) const;
-    PGresult* executePrepared(const int params, const char* const *values, const int* paramLength) const;
-    PGresult* prepareStatement(const QString& stmt, const int params) const;
     bool splitSchemaName(QString& tablename, QString& schemaName) const;
 
 private:

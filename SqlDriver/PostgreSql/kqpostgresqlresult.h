@@ -13,6 +13,9 @@ public:
 
     QVariant handle() const override;
     
+    // Static member
+    static QVariant::Type variantTypeFromPostgreType(const Oid type);
+
 protected:
     // QSqlResult interface
     QVariant data(int i) override;
@@ -29,15 +32,17 @@ protected:
 
 private:
     // Concret class members
-    static QVariant::Type variantTypeFromPostgreType(const Oid type);
     void clearResult();
-    inline const KQPostgreSqlDriver* postgreDriver() const;
-    QString replacePlaceholders(QString sqlStatement) const;
+    QString replaceStandardPlaceholders(QString sqlStatement, bool &ok) const;
+    QString replaceNamedPlacholders(QString sqlStatement, bool& ok);
+    QString replacePlaceholder(QString &sqlStatement, const int startPos, const QString &placeholder);
     char** cstringArrayOfSize(const int size) const;
     void freeCStringArray(char** array, const int size);
     char* stringCopy(const QString& origin) const;
     QString variantToString(const QVariant& value) const;
-    
+    bool isPrepared(const QString& stmtName) const;
+    void executePreparedStmt();
+
 private:
     PGresult* m_pResult;
     int m_currentSize;

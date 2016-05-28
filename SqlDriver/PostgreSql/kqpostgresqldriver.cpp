@@ -11,9 +11,10 @@ Q_DECLARE_METATYPE(PGconn*)
 /**
  * Standard Constructor for the driver.
  */
-KQPostgreSqlDriver::KQPostgreSqlDriver()
+KQPostgreSqlDriver::KQPostgreSqlDriver() :
+    m_pConnection(NULL)
 {
-
+    setOpen(false);
 }
 
 /**
@@ -23,6 +24,7 @@ KQPostgreSqlDriver::~KQPostgreSqlDriver()
 {
     if (m_pConnection) {
         PQfinish(m_pConnection);
+        m_pConnection = NULL;
     }
 }
 
@@ -105,6 +107,7 @@ void KQPostgreSqlDriver::close()
         PQfinish(m_pConnection);
         m_pConnection = NULL;
         setOpenError(false);
+        setOpen(false);
     }
 }
 
@@ -132,15 +135,18 @@ QSqlResult *KQPostgreSqlDriver::createResult() const
 bool KQPostgreSqlDriver::open(const QString &db, const QString &user, const QString &password,
                               const QString &host, int port, const QString &connOpts)
 {
+    qDebug() << "Driver: Open database ...";
     if (isOpen()) {
         close();
     }
-    QString connectionInfo("host=%1 port=%2 dbname=%3 user=%4 password=%5");
-    connectionInfo.arg(host).arg(port).arg(db).arg(user).arg(password);
+    qDebug() << "Driver: Create connection string ...";
+    QString prototype("host=%1 port=%2 dbname=%3 user=%4 password=%5");
+    QString connectionInfo = prototype.arg(host).arg(port).arg(db).arg(user).arg(password);
     if (! connOpts.isEmpty()) {
         QString options = QString(connOpts).replace(QChar(';'), QChar(' '));
         connectionInfo.append(' ').append(options);
     }
+    qDebug() << "Connection string: " << connectionInfo;
     QByteArray info = connectionInfo.toLocal8Bit();
     m_pConnection = PQconnectdb(info.data());
     ConnStatusType status = PQstatus(m_pConnection);
@@ -231,39 +237,6 @@ QSqlRecord KQPostgreSqlDriver::record(const QString &tableName) const
     }
 
     return info;
-}
-
-/**
- * Execute a prepared statement with given name.
- * @param preparedStm       The name of the prepared statement.
- * @return                  A result of executed statement.
- */
-PGresult *KQPostgreSqlDriver::executePrepared(const QString &stmtName) const
-{
-    return PQexec(m_pConnection, stmtName.toLocal8Bit().data());
-}
-
-/**
- * Execute a prepared statement.
- * @param params            The numbr of params in values and paramLength array.
- * @param values            An array of values as cstrings.
- * @param paramLength       An array with the length of each value.
- * @return                  A pointer to the result of execution.
- */
-PGresult *KQPostgreSqlDriver::executePrepared(const int params, const char * const *values, const int *paramLength) const
-{
-    return PQexecPrepared(m_pConnection, "", params, values, paramLength, NULL, 0);
-}
-
-/**
- * Prepare a SQL statement.
- * @param stmt          SQL statement.
- * @param params        The number of parameter in SQL statement.
- * @return              A PostgreSQL result pointer.
- */
-PGresult *KQPostgreSqlDriver::prepareStatement(const QString &stmt, const int params) const
-{
-    return PQprepare(m_pConnection, "", stmt.toLocal8Bit().data(), params, NULL);
 }
 
 /**
