@@ -216,6 +216,7 @@ QSqlRecord KQPostgreSqlDriver::record(const QString &tableName) const
         // If can not execute statement then return an empty record.
         return info;
     }
+    KQPostgreSqlResult* result = (KQPostgreSqlResult*)query.result();
     while (query.next()) {
         int len = query.value(3).toInt();
         int precision = query.value(4).toInt();
@@ -227,7 +228,7 @@ QSqlRecord KQPostgreSqlDriver::record(const QString &tableName) const
         QString defVal = query.value(5).toString();
         if (!defVal.isEmpty() && defVal.at(0) == QLatin1Char('\''))
             defVal = defVal.mid(1, defVal.length() - 2);
-        QSqlField f(query.value(0).toString(), KQPostgreSqlResult::variantTypeFromPostgreType(query.value(1).toInt()));
+        QSqlField f(query.value(0).toString(), result->variantTypeFromPostgreType(query.value(1).toInt()));
         f.setRequired(query.value(2).toBool());
         f.setLength(len);
         f.setPrecision(precision);

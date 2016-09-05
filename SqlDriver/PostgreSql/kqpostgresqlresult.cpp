@@ -200,15 +200,17 @@ bool KQPostgreSqlResult::fetchLast()
  */
 int KQPostgreSqlResult::numRowsAffected()
 {
-    char* value = PQcmdTuples(m_pResult);
-    QString numRowsString(value);
-    bool OK = false;
-    int numRows = numRowsString.toInt(&OK);
-    if (!OK) {
-        qWarning("Could not convert char* to int.");
+    char* strValue = PQcmdTuples(m_pResult);
+    char** errorPos = NULL;
+    long value = strtol(strValue, errorPos, 10);
+    if (**errorPos != '\0') {
+        PGconn* pConnection = driver()->handle().value<PGconn*>();
+        QSqlError error(QString("Could not get information about affected rows !"), PQerrorMessage(pConnection),
+                        QSqlError::UnknownError, PQresultStatus(m_pResult));
+        setLastError(error);
     }
 
-    return numRows;
+    return (int)value;
 }
 
 /**
@@ -338,7 +340,7 @@ int KQPostgreSqlResult::size()
  * @param type      A PostgreSql Oid with data type information.
  * @return          A QVariant::Type similar to the Postgre type.
  */
-QVariant::Type KQPostgreSqlResult::variantTypeFromPostgreType(const Oid type)
+QVariant::Type KQPostgreSqlResult::variantTypeFromPostgreType(const Oid type) const
 {
     QVariant::Type variantType = QVariant::Invalid;
     switch (type) {

@@ -7,16 +7,14 @@
 
 class KQPostgreSqlResult : public QSqlResult
 {
+    friend class KQPostgreSqlDriver;
 public:
-    explicit KQPostgreSqlResult(const QSqlDriver* driver);
     ~KQPostgreSqlResult();
 
     QVariant handle() const override;
-    
-    // Static member
-    static QVariant::Type variantTypeFromPostgreType(const Oid type);
 
 protected:
+    explicit KQPostgreSqlResult(const QSqlDriver* driver);
     // QSqlResult interface
     QVariant data(int i) override;
     bool isNull(int i) override;
@@ -42,6 +40,7 @@ private:
     QString variantToString(const QVariant& value) const;
     bool isPrepared(const QString& stmtName) const;
     void executePreparedStmt();
+    QVariant::Type variantTypeFromPostgreType(const Oid type) const;
 
 private:
     PGresult* m_pResult;
