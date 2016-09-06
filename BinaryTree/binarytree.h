@@ -44,18 +44,23 @@
   */
 
 #include <treenode.h>
+#include <QDebug>
 
-// Node compare data type is used here as behaviour type.
-typedef CompareResult EqualBehaviour;
 
 template<class T>
 class BinaryTree
 {
+    friend class TreeNode<T>;
+
 public:
+
+    enum EqualBehaviour { EqualToLesser = -1, KeepEqual = 0, EqualToGreater = 1 };
+    enum CompareResult { Lesser = -1, Equal = 0, Greater = 1 };
+
     // Constructor
     BinaryTree() :
         m_pRoot(0),
-        m_equalBehaviour(Lesser)
+        m_equalBehaviour(EqualToLesser)
     {
 
     }
@@ -63,7 +68,7 @@ public:
     // Destructor
     ~BinaryTree()
     {
-        m_pRoot->deleteChildNodes();
+        deleteNodesFrom(m_pRoot);
         delete m_pRoot;
     }
 
@@ -77,6 +82,12 @@ public:
 private:
     TreeNode<T>* m_pRoot;
     EqualBehaviour m_equalBehaviour;
+
+    // Private member functions.
+    void appendNodeString(TreeNode<T> *pNode, QString& treeString, const int space) const;
+    CompareResult compareNodes(const TreeNode<T>* const pNode, const TreeNode<T>* const pCompareNode) const;
+    CompareResult compareNodesWithData(const TreeNode<T>* const pNode, const T& data) const;
+    void deleteNodesFrom(TreeNode<T> *pNode);
 };
 
 
@@ -101,11 +112,11 @@ void BinaryTree<T>::insert(const T& data)
     TreeNode<T>* pCurrentNode = m_pRoot;
     bool notInserted = true;
     while (notInserted) {
-        CompareResult result = pCurrentNode->compareWith(pNewNode);
+        CompareResult result = compareNodes(pCurrentNode, pNewNode);
         if (result == Equal) {
             // Changes result to 'Equal' behaviour.
             // Could be one of:     Lesser, Equal or Greater
-            result = m_equalBehaviour;
+            result = (CompareResult)m_equalBehaviour;
         }
         switch (result) {
         case Lesser:
@@ -148,7 +159,7 @@ QString BinaryTree<T>::toString() const
         return QString("Is empty.");
     }
     QString treeString;
-    m_pRoot->appendNodeString(treeString, 0);
+    appendNodeString(m_pRoot, treeString, 0);
 
     return treeString;
 }
@@ -163,7 +174,7 @@ TreeNode<T> *BinaryTree<T>::findNodeWith(const T &data) const
 {
     TreeNode<T>* pNode = m_pRoot;
     while (pNode) {
-        CompareResult result = pNode->compareDataWith(data);
+        CompareResult result = compareNodesWithData(pNode, data);
         switch (result) {
         case Greater:
             pNode = pNode->rigthChild();
@@ -178,6 +189,92 @@ TreeNode<T> *BinaryTree<T>::findNodeWith(const T &data) const
     }
 
     return NULL;
+}
+
+/**
+ * Walk recursively through the tree and build a string representation.
+ * @param pNode         The next node.
+ * @param treeString    A string reference to append node strings.
+ * @param space         A space value depending on the current deepth.
+ */
+template<class T>
+void BinaryTree<T>::appendNodeString(TreeNode<T>* pNode, QString &treeString, const int space) const
+{
+    if (pNode->hasRigthChild()) {
+        appendNodeString(pNode->rigthChild(), treeString, space + 5);
+    }
+
+    QString spaceString(space, ' ');
+    treeString.append(spaceString).append(pNode->toString());
+
+    if (pNode->hasLeftChild()) {
+        appendNodeString(pNode->leftChild(), treeString, space + 5);
+    }
+}
+
+/**
+ * Compare two nodes with their node data.
+ * @param pNode         Node pointer to a node which is to compare with another one.
+ * @param pCompareNode  The other node to compare.
+ * @return              Return Lesser (-1) if pCompareNode data is lesser then data of pNode.
+ *                      Return Greater (1) if pCompareNode data is greater. Otherwise Equal (0).
+ */
+template<class T>
+typename BinaryTree<T>::CompareResult BinaryTree<T>::compareNodes(const TreeNode<T> * const pNode, const TreeNode<T> * const pCompareNode) const
+{
+    const T& pNodeData = pNode->userData();
+    const T& pCompareData = pCompareNode->userData();
+    if (pCompareData < pNodeData) {
+        return Lesser;
+    }
+    if (pCompareData > pNodeData) {
+        return Greater;
+    }
+
+    return Equal;
+}
+
+/**
+ * Compare data of a node with other data. To search in the tree.
+ * @param pNode         The node which data is to compare.
+ * @param data          Data to compare.
+ * @return              Return Lesser (-1) if data is lesser then node data.
+ *                      Return Greater (1) if data is greater then node data.
+ *                      Return Equal (0) if node data and data are equal.
+ */
+template<class T>
+typename BinaryTree<T>::CompareResult BinaryTree<T>::compareNodesWithData(const TreeNode<T> * const pNode, const T &data) const
+{
+    const T& nodeData = pNode->userData();
+    if (data < nodeData) {
+        return Lesser;
+    }
+    if (data > nodeData) {
+        return Greater;
+    }
+
+    return Equal;
+}
+
+/**
+ * Delete the tree or a part of the tree from memory.
+ * @param pNode     From this node all childes will be deleted.
+ */
+template<class T>
+void BinaryTree<T>::deleteNodesFrom(TreeNode<T>* pNode)
+{
+    if (pNode->hasLeftChild()) {
+        TreeNode<T>* pLeftNode = pNode->leftChild();
+        deleteNodesFrom(pLeftNode);
+        delete pLeftNode;
+        pNode->setLeftChild(NULL);
+    }
+    if (pNode->hasRigthChild()) {
+        TreeNode<T>* pRigthNode = pNode->rigthChild();
+        deleteNodesFrom(pRigthNode);
+        delete pRigthNode;
+        pNode->setRigthChild(NULL);
+    }
 }
 
 

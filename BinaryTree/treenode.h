@@ -25,10 +25,9 @@
 // This data type is returned when two nodes were compared.
 enum CompareResult { Lesser = -1, Equal = 0, Greater = 1 };
 
-
 template<class T>
 class TreeNode
-{
+{    
 public:
     TreeNode(const T& data) :
         m_data(data),
@@ -38,13 +37,11 @@ public:
 
     }
 
-    CompareResult compareWith(const TreeNode* const pNode) const;
-    CompareResult compareDataWith(const T& data) const;
-    QString appendNodeString(QString& treeString, const int space) const;
-    void deleteChildNodes();
-    T userData() const                              { return m_data; }
+    T userData()                                    { return m_data; }
+    const T& userData() const                       { return m_data; }
     void setUserData(const T& data)                 { m_data = data; }
     T* ptrUserData()                                { return &m_data; }
+    QString toString() const                        { return m_data.toString(); }
 
     // Public inline methods
     bool hasLeftChild() const                       { return m_pLeftChild != 0; }
@@ -62,84 +59,5 @@ private:
     TreeNode* m_pLeftChild;
     TreeNode* m_pRigthChild;
 };
-
-
-
-/**
- * Compares this node with another node. It will compare the user data objects.
- * @param pNode     A node to compare with this node.
- * @return          Lesser if user data of pNode is lesser the user data of this node.
- *                  Greater if user data of pNode is greater. Or Equal if user data
- *                  of both nodes are Equal.
- */
-template<class T>
-CompareResult TreeNode<T>::compareWith(const TreeNode* const pNode) const
-{
-    return compareDataWith(pNode->m_data);
-}
-
-/**
- * Compares the user data of this node with another user data object.
- * @param data      A reference to a user data object which is compared with the one of this node.
- * @return          Lesser if user data of pNode is lesser the user data of this node.
- *                  Greater if user data of pNode is greater. Or Equal if user data
- *                  of both nodes are Equal.
- */
-template<class T>
-CompareResult TreeNode<T>::compareDataWith(const T &data) const
-{
-    if (data > m_data) {
-        return Greater;
-    }
-    if (data == m_data) {
-        return Equal;
-    }
-
-    return Lesser;
-}
-
-/**
- * Recursive
- * This method should not be called. It is used to get a string representation of
- * the tree. It is call from BinaryTree objects 'toString()' method.
- * @param treeString        A string reference where node string is added.
- * @param space             How much space are required at this point in the tree.
- * @return treeString       The string representation of the tree after recursive walkthrough.
- */
-template<class T>
-QString TreeNode<T>::appendNodeString(QString& treeString, const int space) const
-{
-    if (hasRigthChild()) {
-        m_pRigthChild->appendNodeString(treeString, space + 5);
-    }
-
-    QString nodeData = QString(space, ' ').append(m_data.toString());
-    treeString.append(nodeData);
-
-    if (hasLeftChild()) {
-        m_pLeftChild->appendNodeString(treeString, space + 5);
-    }
-
-    return treeString;
-}
-
-/**
- * Recursive
- * Delete all child nodes down the tree starting at this node.
- */
-template<class T>
-void TreeNode<T>::deleteChildNodes()
-{
-    if (hasLeftChild()) {
-        m_pLeftChild->deleteChildNodes();
-        delete m_pLeftChild;
-        m_pLeftChild = NULL;
-    }
-    if (hasRigthChild()) {
-        m_pRigthChild->deleteChildNodes();
-        delete m_pRigthChild;
-        m_pRigthChild = NULL;
-    }
-}
 
 #endif // TREENODE_H
