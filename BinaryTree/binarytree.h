@@ -39,8 +39,7 @@
   * Additional it is required to implement a 'toString()' method in the user data object.
   *
   * ToDo:
-  * - search function
-  *
+  * - remove function
   */
 
 #include <treenode.h>
@@ -68,16 +67,18 @@ public:
     // Destructor
     ~BinaryTree()
     {
-        deleteNodesFrom(m_pRoot);
+        removeDescendantsFrom(m_pRoot);
         delete m_pRoot;
     }
 
     // Public member functions.
     void insert(const T& data);
+    void insert(TreeNode<T> * const pNewNode);
     QString toString() const;
     void setEqualBehaviour(const EqualBehaviour behaviour)      { m_equalBehaviour = behaviour; }
     EqualBehaviour equalBehaviour() const                       { return m_equalBehaviour; }
     TreeNode<T>* findNodeWith(const T& data) const;
+    void removeDescendantsFrom(TreeNode<T> *pNode);
 
 private:
     TreeNode<T>* m_pRoot;
@@ -87,7 +88,6 @@ private:
     void appendNodeString(TreeNode<T> *pNode, QString& treeString, const int space) const;
     CompareResult compareNodes(const TreeNode<T>* const pNode, const TreeNode<T>* const pCompareNode) const;
     CompareResult compareNodesWithData(const TreeNode<T>* const pNode, const T& data) const;
-    void deleteNodesFrom(TreeNode<T> *pNode);
 };
 
 
@@ -105,6 +105,16 @@ template<typename T>
 void BinaryTree<T>::insert(const T& data)
 {
     TreeNode<T>* pNewNode = new TreeNode<T>(data);
+    insert(pNewNode);
+}
+
+/**
+ * @brief BinaryTree::insert
+ * @param pNewNode
+ */
+template<class T>
+void BinaryTree<T>::insert(TreeNode<T> * const pNewNode)
+{
     if (m_pRoot == 0) {
         m_pRoot = pNewNode;
         return;
@@ -222,16 +232,7 @@ void BinaryTree<T>::appendNodeString(TreeNode<T>* pNode, QString &treeString, co
 template<class T>
 typename BinaryTree<T>::CompareResult BinaryTree<T>::compareNodes(const TreeNode<T> * const pNode, const TreeNode<T> * const pCompareNode) const
 {
-    const T& pNodeData = pNode->userData();
-    const T& pCompareData = pCompareNode->userData();
-    if (pCompareData < pNodeData) {
-        return Lesser;
-    }
-    if (pCompareData > pNodeData) {
-        return Greater;
-    }
-
-    return Equal;
+    return compareNodesWithData(pNode, pCompareNode->userData());
 }
 
 /**
@@ -261,17 +262,17 @@ typename BinaryTree<T>::CompareResult BinaryTree<T>::compareNodesWithData(const 
  * @param pNode     From this node all childes will be deleted.
  */
 template<class T>
-void BinaryTree<T>::deleteNodesFrom(TreeNode<T>* pNode)
+void BinaryTree<T>::removeDescendantsFrom(TreeNode<T>* pNode)
 {
     if (pNode->hasLeftChild()) {
         TreeNode<T>* pLeftNode = pNode->leftChild();
-        deleteNodesFrom(pLeftNode);
+        removeDescendantsFrom(pLeftNode);
         delete pLeftNode;
         pNode->setLeftChild(NULL);
     }
     if (pNode->hasRigthChild()) {
         TreeNode<T>* pRigthNode = pNode->rigthChild();
-        deleteNodesFrom(pRigthNode);
+        removeDescendantsFrom(pRigthNode);
         delete pRigthNode;
         pNode->setRigthChild(NULL);
     }
