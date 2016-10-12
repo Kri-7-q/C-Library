@@ -186,18 +186,6 @@ void OptionParser::setWarningUnexpectedValue(const QString &option, const QStrin
 }
 
 /**
- * Set a value convertion warning.
- * If a option value could not be converted from string to a given type then a warning is set.
- * @param value     A string with the value from console input.
- * @param type      A QVariant type to which the string should be converted.
- */
-void OptionParser::setWarningValueConvertion(const QString &value, const QVariant &destinationValue)
-{
-    m_warningMessages += QString("Value '%1' could not be converted to '%2'! Value was set to '%3'.")
-                            .arg(value).arg(destinationValue.typeName()).arg(destinationValue.toString());
-}
-
-/**
  * Set error message. Some options were found which should have a value but
  * they does not have any.
  * @param optionList
@@ -228,7 +216,7 @@ void OptionParser::setErrorOptionNeedValue(const char option)
  * @param dataType
  * @return
  */
-QVariant OptionParser::convertValueToVariant(const QString &value, const QVariant::Type dataType)
+QVariant OptionParser::convertValueToVariant(const QString &value, const QVariant::Type dataType) const
 {
     if (value.isEmpty()) {
         return QVariant();
@@ -237,29 +225,9 @@ QVariant OptionParser::convertValueToVariant(const QString &value, const QVarian
     case QVariant::String:
         return QVariant(value);
         break;
-    case QVariant::Int: {
-        bool ok = false;
-        int val = value.toInt(&ok);
-        if (ok) {
-            return QVariant(val);
-        } else {
-            setWarningValueConvertion(value, QVariant(0));
-            return QVariant(0);
-        }
+    case QVariant::Int:
+        return QVariant(value.toInt());
         break;
-    }
-    case QVariant::Double: {
-        QString strVal(value);
-        strVal.replace(QChar(','), QChar('.'), Qt::CaseSensitive);
-        bool ok = false;
-        double val = strVal.toDouble(&ok);
-        if (ok) {
-            return QVariant(val);
-        } else {
-            setWarningValueConvertion(value, QVariant(0.0));
-            return QVariant(0.0);
-        }
-    }
     default:
         break;
     }
@@ -318,13 +286,13 @@ OptionDefinition OptionParser::parseForOptionSet(const QString &parameter, QList
  * @param definition
  * @param value
  */
-void OptionParser::setOption(Arguments &arguments, const OptionDefinition &definition, const QString &valueString)
+void OptionParser::setOption(Arguments &arguments, const OptionDefinition &definition, const QString &valueString) const
 {
     if (definition.isSwitch()) {
         const_cast<OptionDefinition*>(&definition)->setSwitchOn();
         return;
     }
-    QVariant value = convertValueToVariant(valueString, definition.dataType());
+    QVariant value = definition.convertValue(valueString);
     arguments.insert(definition.option(), value);
 }
 

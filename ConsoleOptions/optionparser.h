@@ -61,17 +61,16 @@ private:
     QString getLongOptionValue(const QString& parameter) const;
     OptionDefinition findLongOption(const QString& longOption) const;
     OptionDefinition parseForOptionSet(const QString& parameter, QList<char>& args, QList<char> &needValueList) const;
-    void setOption(Arguments& arguments, const OptionDefinition& definition, const QString& valueString = QString());
+    void setOption(Arguments& arguments, const OptionDefinition& definition, const QString& valueString = QString()) const;
     void setOption(Arguments &arguments, const QList<char>& optionList) const;
     // Error and warnings.
     void setErrorUnknownOption(const QString& longOption);
     void setErrorValueWithoutOption(const QString& value);
     void setWarningUnexpectedValue(const QString& option, const QString &value);
-    void setWarningValueConvertion(const QString& value, const QVariant& destinationValue);
     void setErrorOptionNeedValue(const QList<char>& optionList);
     void setErrorOptionNeedValue(const char option);
     // Data conversion.
-    QVariant convertValueToVariant(const QString& value, const QVariant::Type dataType);
+    QVariant convertValueToVariant(const QString& value, const QVariant::Type dataType) const;
     // Initialization
     void initializeDefinitionTable(const QList<OptionDefinition>& definitionList);
 };
