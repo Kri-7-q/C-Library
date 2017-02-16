@@ -27,6 +27,9 @@ protected:
     QString longOptionArgument(const QString &param) const;
     void setErrorMsg(const QString& msg);
 
+private:
+    const QList<OptionDefinition>& m_definitionList;
+    QString m_errorMsg;
 };
 
 #endif // OPTIONPARSER_H

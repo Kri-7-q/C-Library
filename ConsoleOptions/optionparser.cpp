@@ -141,6 +141,8 @@ OptionDefinition OptionParser::definitionOf(const QString &name) const
         }
     }
 
+    return OptionDefinition();
+}
 
 /**
  * Takes a command line argument which starts with a hyphen '-'.
