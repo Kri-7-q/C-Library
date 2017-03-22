@@ -1,0 +1,441 @@
+#include "optionparser.h"
+
+/**
+ * Private
+ * Class Private of OptionParser.
+ * Contains all the private implementation of class OptionParser.
+ */
+class OptionParser::Private {
+
+public:
+    Private(const QList<OptionDefinition>& definitionList, const quint8 requiredFreeParam, const quint8 allowedFreeParam);
+
+    enum ParseState { None, Option, LongOption, Argument, OptionalArgument, NonOptArgument };
+
+    // Methods
+    ParseState stateFromParameter(const char* const param, const OptionDefinition &lastOption) const;
+    OptionDefinition definitionOf(const char symbol) const;
+    OptionDefinition definitionOf(const QString& name) const;
+    bool parseOptions(const char* const param, OptionTable& optionTable, OptionDefinition &last, char& wrong) const;
+    bool parseLongOption(const char* const param, OptionTable& optionTable, OptionDefinition& last);
+    QString longOptionName(const QString &param, const int indexEqualSymbol) const;
+    QString longOptionArgument(const QString &param, const int indexEqualSymbol);
+    void setErrorMsg(const QString& msg);
+    void checkFreeArgumentList(const OptionTable& optionTable);
+
+    // Variables
+    const QList<OptionDefinition> m_definitionList;
+    QString m_errorMsg;
+    quint8 m_requireFreeParam;
+    quint8 m_allowedFreeParam;
+};
+
+/**
+ * Private
+ * Creates the private part of option parser.
+ * @param definitionList
+ * @param requiredFreeParam
+ * @param allowedFreeParam
+ */
+OptionParser::Private::Private(const QList<OptionDefinition>& definitionList, const quint8 requiredFreeParam, const quint8 allowedFreeParam) :
+    m_definitionList(definitionList),
+    m_requireFreeParam(requiredFreeParam),
+    m_allowedFreeParam(allowedFreeParam)
+{
+
+}
+
+/**
+ * Checks if the parameter from command line contains options or arguments.
+ * If a parameter starts with a hyphen '-' it must be parsed for options.
+ * If parameter starts with two hyphens '--' then there must be a long name option.
+ * Otherwise it is a argument to an option or a free argument.
+ * @param param         A parameter from command line input. One of the argv array.
+ * @param lastOption    The definition of the last found option or an empty definition.
+ * @return              A state value. One of Option, LongOption, Argument and NonOptArgument.
+ */
+OptionParser::Private::ParseState OptionParser::Private::stateFromParameter(const char * const param,
+                                                                            const OptionDefinition& lastOption) const
+{
+    if (param[0] == '-') {
+        if (param[1] == '-') {
+            return LongOption;
+        }
+
+        return Option;
+    }
+
+    return (lastOption.takesValue()) ? Argument : NonOptArgument;
+}
+
+/**
+ * Searches for a option definition for a given character.
+ * Returns the option definition to that character or if there is not
+ * such an option defined it returns an empty definition object.
+ * @param symbol        The character to search for in definitions.
+ * @return              An OptionDefinition object with an option definition
+ *                      or empty if there is not such an option.
+ */
+OptionDefinition OptionParser::Private::definitionOf(const char symbol) const
+{
+    for (quint16 index=0; index<m_definitionList.size(); ++index) {
+        if (m_definitionList[index].option() == symbol) {
+            return m_definitionList[index];
+        }
+    }
+
+    return OptionDefinition();
+}
+
+/**
+ * Overload of function definitionOf() to find a long name option in
+ * the list of definitions.
+ * @param name      The long name of an option.
+ * @return          An OptionDefinition object with an option definition
+ *                  or empty if such an option doesn't exist.
+ */
+OptionDefinition OptionParser::Private::definitionOf(const QString &name) const
+{
+    for (quint16 index=0; index<m_definitionList.size(); ++index) {
+        if (m_definitionList[index].longOptionName() == name) {
+            return m_definitionList[index];
+        }
+    }
+
+    return OptionDefinition();
+}
+
+/**
+ * Takes a command line argument if it starts with two hyphen '--'.
+ * It checks the argument for a long name option. If the option is
+ * combined with a value like '--file=/Home/Horst/Data' then the
+ * option and its value is taken and set to the QHash map (optionTable).
+ * If argument doesn't contain a value '--file' but option takes a
+ * value then the definition of that option is set to 'last'. This
+ * is required to set a following value to that option.
+ * @param param             A command line argument from the 'argv[]' array.
+ * @param optionTable       A QHash<char,QVarinat> map reference to store found options.
+ * @param last              Reference to an option definition object.
+ * @return                  True if the argument contains a valid long name option.
+ *                          Other wise it returns false if the option is unknown.
+ */
+bool OptionParser::Private::parseLongOption(const char * const param, OptionTable &optionTable, OptionDefinition &last)
+{
+    QString parameter(param);
+    int index = parameter.indexOf('=');     // Console parameter may contain long option and argument.
+    QString optionName = longOptionName(parameter, index);
+    OptionDefinition definition = definitionOf(optionName);
+    if (! definition.isValid()) {
+        // ERROR: Is not an option.
+        return false;
+    }
+    if (definition.isSwitch()) {
+        definition.setSwitch(true);         // This option is just a switch which turns a boolean to true.
+        last = OptionDefinition();
+        return true;
+    }
+    if (index > 0) {
+        QString stringVal = longOptionArgument(parameter, index);
+        optionTable.insert(definition.option(), definition.convertValue(stringVal));
+        last = OptionDefinition();
+        return true;
+    }
+    if (definition.takesValue()) {
+        last = definition;
+    }
+    optionTable.insert(definition.option(), QVariant());
+
+    return true;
+}
+
+/**
+ * Extracts the name of a long name option from the command line argument
+ * like '--file=/Home/Horst/Data'.
+ * @param param     A string with the command line argument.
+ * @return          The found name of the long name option as a QString.
+ */
+QString OptionParser::Private::longOptionName(const QString& param, const int indexEqualSymbol) const
+{
+    if (indexEqualSymbol < 0) {
+        return param.right(param.length() - 2);
+    }
+
+    return param.mid(2, indexEqualSymbol - 2);
+}
+
+/**
+ * Extracts the option value from a long name option combined
+ * with a value like '--file=/home/Horst/Data'.
+ * @param param     The command line argument with the option and its value.
+ * @return          The value of that option as a QString.
+ */
+QString OptionParser::Private::longOptionArgument(const QString& param, const int indexEqualSymbol)
+{
+    if (indexEqualSymbol == param.length() - 1) {
+        m_errorMsg += QString("Missing an argument at parameter '%1'.").arg(param);
+        return QString();
+    }
+
+    return param.right(param.length() - indexEqualSymbol - 1);
+}
+
+/**
+ * Setter function to set an error message.
+ * @param msg       The message text.
+ */
+void OptionParser::Private::setErrorMsg(const QString &msg)
+{
+    m_errorMsg.append(msg).append('\n');
+}
+
+/**
+ * Check if all requiered free arguments are there or not and if
+ * the containing free arguments are allowed.
+ * @param freeArgumentList
+ */
+void OptionParser::Private::checkFreeArgumentList(const OptionTable &optionTable)
+{
+    QStringList freeArgumentList = optionTable.value('?', QVariant()).toStringList();
+    int count = freeArgumentList.size();
+    if (count < m_requireFreeParam) {
+        QString error = QString("There are to less free arguments. Found %1 and require %2.");
+        setErrorMsg(error.arg(count).arg(m_requireFreeParam));
+    }
+    if (count > m_allowedFreeParam) {
+        QString error = QString("Found %1 free arguments but there are only %2 allowed.");
+        setErrorMsg(error.arg(count).arg(m_allowedFreeParam));
+        for (quint8 index=0; index<count; ++index) {
+            setErrorMsg(freeArgumentList[index]);
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+// Class OptionParser
+// ----------------------------------------------------------------------------------------------------------------
+
+/**
+ * Constructs an option parser object. It takes a list of option definitions.
+ * The defined options can be parsed of that parser.
+ * @param definitionList    A list of option definitions.
+ */
+OptionParser::OptionParser(const QList<OptionDefinition> &definitionList, const quint8 requiredFreeParam, const quint8 allowedFreeParam) :
+    d(new Private(definitionList, requiredFreeParam, allowedFreeParam))
+{
+
+}
+
+/**
+ * Destructor of parser object.
+ * Removes the private members from heap.
+ */
+OptionParser::~OptionParser()
+{
+    delete d;
+}
+
+/**
+ * Takes the command line parameter an parses them for optiontions.
+ * The options which can be parsed with this function must be defined.
+ * Therefore use the OptionDefinition class.
+ * This function takes the argument counter and array values from the
+ * main() function. The third parameter specifize at which parameter
+ * parsing should start.
+ * @param argc          The argument counter value from the main() function.
+ * @param argv[]        The argument array from main() function.
+ * @param start         The index of the first parameter where to start parsing.
+ * @return optionTable  A QHash<char,QVariant> table with all found options
+ *                      and their values.
+ */
+OptionTable OptionParser::parseParameter(const int argc, const char * const argv[], const int start)
+{
+    OptionTable optionTable;
+    Private::ParseState state = Private::None;
+    int index = start;
+    OptionDefinition lastOption;
+    while (index < argc) {
+        switch (state) {
+        case Private::None:
+            state = d->stateFromParameter(argv[index], lastOption);
+            if (lastOption.requireValue() && state != Private::Argument) {
+                d->setErrorMsg(QString("A value to option '%1' is missing !").arg(lastOption.option()));
+                return optionTable;
+            }
+            break;
+        case Private::Option: {
+            char wrong = 0;
+            if (! d->parseOptions(argv[index], optionTable, lastOption, wrong)) {
+                d->setErrorMsg(QString("Found wrong symbol '%1'. Is unknown option !").arg(wrong));
+                return optionTable;
+            } else {
+                state = Private::None;
+                ++index;
+            }
+            break;
+        }
+        case Private::LongOption:
+            if (! d->parseLongOption(argv[index], optionTable, lastOption))  {
+                QString param(argv[index]);
+                d->setErrorMsg(QString("The parameter '%1' is not a known option !").arg(param));
+                return optionTable;
+            } else {
+                state = Private::None;
+                ++index;
+            }
+            break;
+        case Private::Argument:
+            optionTable.insert(lastOption.option(), lastOption.convertValue(QString(argv[index])));
+            lastOption = OptionDefinition();
+            state = Private::None;
+            ++index;
+            break;
+        case Private::NonOptArgument: {
+            // Non option argument. Free argument.
+            QStringList argumentList;
+            if (optionTable.contains('?')) {
+                argumentList = optionTable['?'].toStringList();
+            }
+            argumentList << QString(argv[index]);
+            optionTable.insert('?', argumentList);
+            state = Private::None;
+            ++index;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    d->checkFreeArgumentList(optionTable);
+
+    return optionTable;
+}
+
+/**
+ * Getter
+ * @return      True if a error was found while parsing options.
+ */
+bool OptionParser::hasError() const
+{
+    return ! d->m_errorMsg.isEmpty();
+}
+
+/**
+ * Getter
+ * @return      A error message string if an error occured while parsing. Otherwise an empty string.
+ */
+QString OptionParser::errorMsg() const
+{
+    return d->m_errorMsg;
+}
+
+/**
+ * Getter
+ * Get the number of required free parameter in the parameter list from console input.
+ * Free parameter are parameter which are not connected to any option.
+ * Parser will indicate an error if this amount is not reached after parsing.
+ * @return      The number of required free parameter.
+ */
+quint8 OptionParser::requiredFreeParam() const
+{
+    return d->m_requireFreeParam;
+}
+
+/**
+ * Setter
+ * Set the number of required free parameter in the parameter list from console input.
+ * Free parameter are parameter which are not connected to any option.
+ * Parser will indicate an error if this amount is not reached after parsing.
+ * @param numRequiredParam      The number of free parameter which are required.
+ */
+void OptionParser::setRequiredFreParam(const quint8 numRequiredParam)
+{
+    d->m_requireFreeParam = numRequiredParam;
+}
+
+/**
+ * Getter
+ * Get the number of allowed free parameter. Parser will indicate an error if this amount
+ * is risen by the parameter list from console input.
+ * Free parameter are parameter which are not connected to any option.
+ * @return      The number of allowd free parameter.
+ */
+quint8 OptionParser::allowedFreeParam() const
+{
+    return d->m_allowedFreeParam;
+}
+
+/**
+ * Setter
+ * Set the number of allowed free parameter. Parser will indicate an error if this amount
+ * is risen by the parameter list from console input.
+ * Free parameter are parameter which are not connected to any option.
+ */
+void OptionParser::setAllowedFreeParam(const quint8 numAllowedParam)
+{
+    d->m_allowedFreeParam = numAllowedParam;
+}
+
+/**
+ * Takes a command line argument which starts with a hyphen '-'.
+ * It parses this argument for defined options. The argument can
+ * contain options and its values.
+ * All found options will be added to a QHash<char,QVariant> map.
+ * It takes a reference to a OptionDefinition object. The definition
+ * of the last found option will be set to that reference. It is
+ * necessary to add a value to that option if there occures one.
+ * To provide an appropriate error message it take a reference to
+ * a char value. A found character which was not defined as option
+ * will be set to that reference.
+ * @param param             A command line argument to parse for options.
+ * @param optionTable       A reference to the hash map with found options.
+ * @param last              A reference to a OptionDefinition object to store the last found option.
+ * @param wrong             To set a wrong character which was not defined as option for error message.
+ * @return                  True if successfully parsed the command line argument (param).
+ *                          Returns false if a wrong character occurse and set it to the 'wrong'
+ *                          reference.
+ */
+bool OptionParser::Private::parseOptions(const char * const param, OptionTable &optionTable, OptionDefinition& last, char &wrong) const
+{
+    int index = 1;
+    ParseState state = Option;
+    OptionDefinition lastOption;
+    while (param[index] != 0) {
+        OptionDefinition definition = definitionOf(param[index]);
+        switch(state) {
+        case Option:
+            if (definition.isValid()) {                     // Found valid option.
+                if (definition.isSwitch()) {
+                    definition.setSwitch(true);             // Option switches a boolean to true.
+                } else {
+                    lastOption = definition;                // Is normal option.
+                    optionTable.insert(definition.option(), QVariant());
+                    if (definition.requireValue()) {
+                        state = Argument;                   // Option require an argument.
+                    }
+                }
+                ++index;
+            } else {                                        // Found NONE option character.
+                if (lastOption.takesValue()) {
+                    state = Argument;                       // Last option takes a value.
+                } else {
+                    wrong = param[index];                   // Provide wrong character for error msg.
+                    return false;
+                }
+            }
+            break;
+        case Argument: {
+            QString paramaeter(param);
+            QString stringVal = paramaeter.right(paramaeter.length()-index);
+            optionTable.insert(lastOption.option(), lastOption.convertValue(stringVal));
+            last = OptionDefinition();
+            return true;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    last = lastOption;
+
+    return true;
+}
