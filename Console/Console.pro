@@ -23,13 +23,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += optiondefinition.cpp \
-    optionparser.cpp
+    optionparser.cpp \
+    consoleuserinterface.cpp
 
 HEADERS += console_global.h \
     optiondefinition.h \
-    optionparser.h
+    optionparser.h \
+    consoleuserinterface.h
 
 unix {
     target.path = /usr/local/lib
-    INSTALLS += target
+    headers.files = $$HEADERS
+    headers.path = /usr/local/include
+    INSTALLS += target headers
 }
