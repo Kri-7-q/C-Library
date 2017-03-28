@@ -24,16 +24,24 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += optiondefinition.cpp \
     optionparser.cpp \
-    consoleuserinterface.cpp
+    consoleuserinterface.cpp \
+    colorbool.cpp \
+    tableheader.cpp \
+    columnheader.cpp \
+    fondattribute.cpp
 
 HEADERS += console_global.h \
     optiondefinition.h \
     optionparser.h \
-    consoleuserinterface.h
+    consoleuserinterface.h \
+    colorbool.h \
+    tableheader.h \
+    columnheader.h \
+    fondattribute.h
 
 unix {
     target.path = /usr/local/lib
-    headers.files = $$HEADERS
+    headers.files = optiondefinition.h optionparser.h consoleuserinterface.h colorbool.h tableheader.h fondattribute.h
     headers.path = /usr/local/include
     INSTALLS += target headers
 }
