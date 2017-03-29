@@ -56,12 +56,16 @@ void ConsoleUserInterface::Private::setTableColumnWidth(const QList<QVariantMap>
 void ConsoleUserInterface::Private::printTableHeader(const TableHeader& tableHeader)
 {
     QString line = frameLine(tableHeader);
-    QString header("| ");
+    QString header("|");
     for (int index=0; index<tableHeader.size(); ++index) {
         QString field = tableFieldString(tableHeader.headerText(index), tableHeader.width(index));
-        header.append(field).append(" | ");
+        header.append(' ').append(field).append(" |");
     }
-    m_outStream << line << endl << header << endl << line << endl;
+    QString standardFond = FondAttribute().fondCode();
+    QString headerFond = tableHeader.fondAttribute().fondCode();
+    m_outStream << headerFond << line << standardFond << endl;
+    m_outStream << headerFond << header << standardFond << endl;
+    m_outStream << headerFond << line << standardFond << endl;
 }
 
 /**
@@ -90,12 +94,12 @@ QString ConsoleUserInterface::Private::tableFieldString(const QString &text, con
  */
 QString ConsoleUserInterface::Private::tableLine(const QVariantMap &valueMap, const TableHeader &header) const
 {
-    QString line("| ");
+    QString line("|");
     for (int index=0; index<header.size(); ++index) {
         QString key = header.mapKey(index);
         QString value = valueMap.value(key, QVariant()).toString();
         QString field = tableFieldString(value, header.width(index));
-        line.append(field).append(" | ");
+        line.append(' ').append(field).append(" |");
     }
 
     return line;
@@ -162,7 +166,7 @@ ConsoleUserInterface::~ConsoleUserInterface()
  * Setter
  * @param background
  */
-void ConsoleUserInterface::setBackgroundColor(const FondAttribute::BackgrColor background)
+void ConsoleUserInterface::setBackgroundColor(const FondAttribute::Color background)
 {
     d->m_fondAttribute.setBackgroundColor(background);
     d->m_outStream << d->m_fondAttribute.fondCode();
@@ -192,7 +196,7 @@ void ConsoleUserInterface::setFondEffect(const FondAttribute::Effect effect)
  * Getter
  * @return
  */
-FondAttribute::BackgrColor ConsoleUserInterface::backgroundColor() const
+FondAttribute::Color ConsoleUserInterface::backgroundColor() const
 {
     return d->m_fondAttribute.backgroundColor();
 }
@@ -239,7 +243,7 @@ void ConsoleUserInterface::println(const QString &text) const
  */
 void ConsoleUserInterface::printError(const QString &errorMsg) const
 {
-    QString fondAttributes = d->m_fondAttribute.fondCode(FondAttribute::RED, FondAttribute::STANDARD, FondAttribute::NORMAL);
+    QString fondAttributes = FondAttribute::fondCode(FondAttribute::RED, FondAttribute::STANDARD, FondAttribute::NORMAL);
     d->m_outStream << fondAttributes << errorMsg << d->m_fondAttribute.fondCode() << endl;
 }
 
@@ -249,7 +253,7 @@ void ConsoleUserInterface::printError(const QString &errorMsg) const
  */
 void ConsoleUserInterface::printWarning(const QString& warningMsg) const
 {
-    QString fondAttributes = d->m_fondAttribute.fondCode(FondAttribute::BROWN, FondAttribute::STANDARD, FondAttribute::NORMAL);
+    QString fondAttributes = FondAttribute::fondCode(FondAttribute::BROWN, FondAttribute::STANDARD, FondAttribute::NORMAL);
     d->m_outStream << fondAttributes << warningMsg << d->m_fondAttribute.fondCode() << endl;
 }
 
@@ -259,7 +263,7 @@ void ConsoleUserInterface::printWarning(const QString& warningMsg) const
  */
 void ConsoleUserInterface::printSuccess(const QString &successMsg) const
 {
-    QString fondAttributes = d->m_fondAttribute.fondCode(FondAttribute::GREEN, FondAttribute::STANDARD, FondAttribute::NORMAL);
+    QString fondAttributes = FondAttribute::fondCode(FondAttribute::GREEN, FondAttribute::STANDARD, FondAttribute::NORMAL);
     d->m_outStream << fondAttributes << successMsg << d->m_fondAttribute.fondCode() << endl;
 }
 
@@ -272,9 +276,7 @@ void ConsoleUserInterface::printSuccess(const QString &successMsg) const
 void ConsoleUserInterface::printTable(const QList<QVariantMap> &valueList, const TableHeader& header) const
 {
     d->setTableColumnWidth(valueList, const_cast<TableHeader&>(header));
-    d->m_outStream << d->m_fondAttribute.fondCode(FondAttribute::BLUE, FondAttribute::STANDARD, FondAttribute::NORMAL);
     d->printTableHeader(header);
-    d->m_outStream << d->m_fondAttribute.fondCode();
     for (int index=0; index<valueList.size(); ++index) {
         d->m_outStream << d->tableLine(valueList[index], header) << endl;;
     }
@@ -302,18 +304,6 @@ ConsoleUserInterface& ConsoleUserInterface::operator << (const QString& text)
 ConsoleUserInterface& ConsoleUserInterface::operator << (const FondAttribute::Color fondColor)
 {
     setFondColor(fondColor);
-
-    return *this;
-}
-
-/**
- * Set a background color to the console.
- * @param backgrColor
- * @return
- */
-ConsoleUserInterface&  ConsoleUserInterface::operator << (const FondAttribute::BackgrColor backgrColor)
-{
-    setBackgroundColor(backgrColor);
 
     return *this;
 }

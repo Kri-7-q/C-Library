@@ -14,10 +14,10 @@ public:
     ~ConsoleUserInterface();
 
     // Getter and Setter
-    void setBackgroundColor(const FondAttribute::BackgrColor background);
+    void setBackgroundColor(const FondAttribute::Color background);
     void setFondColor(const FondAttribute::Color fondColor);
     void setFondEffect(const FondAttribute::Effect effect);
-    FondAttribute::BackgrColor backgroundColor() const;
+    FondAttribute::Color backgroundColor() const;
     FondAttribute::Color fondColor() const;
     FondAttribute::Effect fondEffect() const;
 
@@ -32,7 +32,6 @@ public:
     // Operator overload
     ConsoleUserInterface& operator << (const QString& text);
     ConsoleUserInterface& operator << (const FondAttribute::Color fondColor);
-    ConsoleUserInterface& operator << (const FondAttribute::BackgrColor backgrColor);
     ConsoleUserInterface& operator << (const FondAttribute::Effect effect);
     ConsoleUserInterface& operator << (const int number);
     ConsoleUserInterface& operator << (const char symbol);

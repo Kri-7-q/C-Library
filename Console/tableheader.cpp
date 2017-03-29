@@ -3,8 +3,20 @@
 
 class TableHeader::Private {
 public:
+    Private();
+
     QList<ColumnHeader> m_columnList;
+    FondAttribute m_fondAttribute;
 };
+
+/**
+ * Standard constructor class Private of TableHeader.
+ */
+TableHeader::Private::Private() :
+    m_fondAttribute(FondAttribute::BLUE)
+{
+
+}
 
 // ---------------------------------------------------------------------------------------------------------------
 // Class TableHeader
@@ -145,4 +157,40 @@ int TableHeader::totalWidth() const
 int TableHeader::size() const
 {
     return d->m_columnList.size();
+}
+
+/**
+ * Getter
+ * @return
+ */
+FondAttribute TableHeader::fondAttribute() const
+{
+    return d->m_fondAttribute;
+}
+
+/**
+ * Setter
+ * @param fondAttribute
+ */
+void TableHeader::setFondAttribute(const FondAttribute &fondAttribute)
+{
+    d->m_fondAttribute = fondAttribute;
+}
+
+/**
+ * Setter
+ * @param color
+ */
+void TableHeader::setFondColor(const FondAttribute::Color color)
+{
+    d->m_fondAttribute.setFondColor(color);
+}
+
+/**
+ * Setter
+ * @param color
+ */
+void TableHeader::setBackgrColor(const FondAttribute::Color color)
+{
+    d->m_fondAttribute.setBackgroundColor(color);
 }

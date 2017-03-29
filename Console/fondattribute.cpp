@@ -5,12 +5,12 @@ class FondAttribute::Private {
 public:
     Private();
     Private(const Private* other);
-    Private(const Color color, const BackgrColor backgrColor, const Effect effect);
+    Private(const Color color, const Color backgrColor, const Effect effect);
 
     void setEqualTo(const Private* const d);
 
     Color m_fondColor;
-    BackgrColor m_backgrColor;
+    Color m_backgrColor;
     Effect m_effect;
 };
 
@@ -18,7 +18,7 @@ public:
  * Standard constructor Private
  */
 FondAttribute::Private::Private() :
-    m_fondColor(GRAY),
+    m_fondColor(STANDARD),
     m_backgrColor(STANDARD),
     m_effect(NORMAL)
 {
@@ -44,7 +44,7 @@ FondAttribute::Private::Private(const FondAttribute::Private *other) :
  * @param backgrColor
  * @param effect
  */
-FondAttribute::Private::Private(const Color color, const BackgrColor backgrColor, const Effect effect) :
+FondAttribute::Private::Private(const Color color, const Color backgrColor, const Effect effect) :
     m_fondColor(color),
     m_backgrColor(backgrColor),
     m_effect(effect)
@@ -77,13 +77,23 @@ FondAttribute::FondAttribute() :
 }
 
 /**
+ * Copy constructor
+ * @param other
+ */
+FondAttribute::FondAttribute(const FondAttribute &other) :
+    d(new Private(other.d))
+{
+
+}
+
+/**
  * Constructor class FondAttribute
  * Creates a fully initialized FondAttribute obect.
  * @param color             Fond color.
  * @param backgrColor       Fond background color.
  * @param effect            Fond effect.
  */
-FondAttribute::FondAttribute(const FondAttribute::Color color, const FondAttribute::BackgrColor backgrColor, const FondAttribute::Effect effect) :
+FondAttribute::FondAttribute(const FondAttribute::Color color, const FondAttribute::Color backgrColor, const FondAttribute::Effect effect) :
     d(new Private(color, backgrColor, effect))
 {
 
@@ -111,7 +121,7 @@ void FondAttribute::setFondColor(const FondAttribute::Color color)
  * Getter
  * @return
  */
-FondAttribute::BackgrColor FondAttribute::backgroundColor() const
+FondAttribute::Color FondAttribute::backgroundColor() const
 {
     return d->m_backgrColor;
 }
@@ -120,7 +130,7 @@ FondAttribute::BackgrColor FondAttribute::backgroundColor() const
  * Setter
  * @param backgrColor
  */
-void FondAttribute::setBackgroundColor(const FondAttribute::BackgrColor backgrColor)
+void FondAttribute::setBackgroundColor(const Color backgrColor)
 {
     d->m_backgrColor = backgrColor;
 }
@@ -149,9 +159,16 @@ void FondAttribute::setFondEffect(const FondAttribute::Effect effect)
  */
 QString FondAttribute::fondCode() const
 {
-    QString code("\033[%1;%2;%3m");
+    QString code;
+    if (d->m_effect == NORMAL) {
+        QString pattern("\033[%1;%2m");
+        code = pattern.arg(d->m_backgrColor + 10).arg(d->m_fondColor);
+    } else {
+        QString pattern("\033[%1;%2;%3m");
+        code = pattern.arg(d->m_backgrColor + 10).arg(d->m_effect).arg(d->m_fondColor);
+    }
 
-    return code.arg(d->m_backgrColor).arg(d->m_effect).arg(d->m_fondColor);
+    return code;
 }
 
 /**
@@ -171,11 +188,11 @@ void FondAttribute::toStandard()
  * @param effect
  * @return
  */
-QString FondAttribute::fondCode(const FondAttribute::Color color, const FondAttribute::BackgrColor backgrColor, const FondAttribute::Effect effect)
+QString FondAttribute::fondCode(const FondAttribute::Color color, const Color backgrColor, const FondAttribute::Effect effect)
 {
-    QString code("\033[%1;%2;%3m");
+    FondAttribute attribute(color, backgrColor, effect);
 
-    return code.arg(backgrColor).arg(effect).arg(color);
+    return attribute.fondCode();
 }
 
 /**

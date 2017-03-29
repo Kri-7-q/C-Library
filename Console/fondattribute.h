@@ -7,19 +7,19 @@
 class CONSOLESHARED_EXPORT FondAttribute
 {
 public:   
-    enum Effect { NORMAL, BOLD, UNDERLINED = 4 };
-    enum Color { BLACK = 30, RED, GREEN, BROWN, BLUE, PURPLE, CYAN, GRAY };
-    enum BackgrColor { BG_BLACK = 40, BG_RED, BG_GREEN, BG_BROWN, BG_BLUE, BG_PURPLE, BG_CYAN, BG_GRAY, STANDARD = 49 };
+    enum Effect { NORMAL, BOLD, ITALIC, UNDERLINED = 4, BLINKING, INVERSE = 7 };
+    enum Color { BLACK = 30, RED, GREEN, BROWN, BLUE, PURPLE, CYAN, GRAY, STANDARD = 39 };
 
     // Constructor
     FondAttribute();
-    FondAttribute(const Color color, const BackgrColor backgrColor = STANDARD, const Effect effect = NORMAL);
+    FondAttribute(const FondAttribute& other);
+    FondAttribute(const Color color, const Color backgrColor = STANDARD, const Effect effect = NORMAL);
 
     // Getter and Setter
     Color fondColor() const;
     void setFondColor(const Color color);
-    BackgrColor backgroundColor() const;
-    void setBackgroundColor(const BackgrColor backgrColor);
+    Color backgroundColor() const;
+    void setBackgroundColor(const Color backgrColor);
     Effect fondEffect() const;
     void setFondEffect(const Effect effect);
 
@@ -28,7 +28,7 @@ public:
     void toStandard();
 
     // Static methods
-    static QString fondCode(const Color color, const BackgrColor backgrColor, const Effect effect);
+    static QString fondCode(const Color color, const Color backgrColor, const Effect effect);
 
     // Operator overload
     FondAttribute& operator = (const FondAttribute& other);
