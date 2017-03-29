@@ -41,7 +41,7 @@ HEADERS += console_global.h \
 
 unix {
     target.path = /usr/local/lib
-    headers.files = optiondefinition.h optionparser.h consoleuserinterface.h colorbool.h tableheader.h fondattribute.h
+    headers.files = $$HEADERS
     headers.path = /usr/local/include
     INSTALLS += target headers
 }
