@@ -28,7 +28,7 @@ SOURCES += optiondefinition.cpp \
     colorbool.cpp \
     tableheader.cpp \
     columnheader.cpp \
-    fondattribute.cpp
+    textattribute.cpp
 
 HEADERS += console_global.h \
     optiondefinition.h \
@@ -37,11 +37,19 @@ HEADERS += console_global.h \
     colorbool.h \
     tableheader.h \
     columnheader.h \
-    fondattribute.h
+    textattribute.h
 
+# ---------------------------------------------------------
+# Make install (distinguish between debug and release).
+# ---------------------------------------------------------
 unix {
-    target.path = /usr/local/lib
     headers.files = $$HEADERS
-    headers.path = /usr/local/include
+    headers.path = /usr/local/include/Console
+    CONFIG(release, debug|release) {
+        target.path = /usr/local/lib/Console/Release
+    }
+    CONFIG(debug, debug|release) {
+        target.path = /usr/local/lib/Console/Debug
+    }
     INSTALLS += target headers
 }

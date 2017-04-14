@@ -1,7 +1,7 @@
-#include "fondattribute.h"
+#include "textattribute.h"
 
 
-class FondAttribute::Private {
+class TextAttribute::Private {
 public:
     Private();
     Private(const Private* other);
@@ -17,7 +17,7 @@ public:
 /**
  * Standard constructor Private
  */
-FondAttribute::Private::Private() :
+TextAttribute::Private::Private() :
     m_fondColor(STANDARD),
     m_backgrColor(STANDARD),
     m_effect(NORMAL)
@@ -29,7 +29,7 @@ FondAttribute::Private::Private() :
  * Copy constructor of class Private
  * @param other
  */
-FondAttribute::Private::Private(const FondAttribute::Private *other) :
+TextAttribute::Private::Private(const TextAttribute::Private *other) :
     m_fondColor(other->m_fondColor),
     m_backgrColor(other->m_backgrColor),
     m_effect(other->m_effect)
@@ -44,7 +44,7 @@ FondAttribute::Private::Private(const FondAttribute::Private *other) :
  * @param backgrColor
  * @param effect
  */
-FondAttribute::Private::Private(const Color color, const Color backgrColor, const Effect effect) :
+TextAttribute::Private::Private(const Color color, const Color backgrColor, const Effect effect) :
     m_fondColor(color),
     m_backgrColor(backgrColor),
     m_effect(effect)
@@ -56,7 +56,7 @@ FondAttribute::Private::Private(const Color color, const Color backgrColor, cons
  * Setter
  * @param d
  */
-void FondAttribute::Private::setEqualTo(const FondAttribute::Private * const d)
+void TextAttribute::Private::setEqualTo(const TextAttribute::Private * const d)
 {
     m_fondColor = d->m_fondColor;
     m_backgrColor = d->m_backgrColor;
@@ -70,7 +70,7 @@ void FondAttribute::Private::setEqualTo(const FondAttribute::Private * const d)
 /**
  * Standard constructor FondAttribute
  */
-FondAttribute::FondAttribute() :
+TextAttribute::TextAttribute() :
     d(new Private())
 {
 
@@ -80,7 +80,7 @@ FondAttribute::FondAttribute() :
  * Copy constructor
  * @param other
  */
-FondAttribute::FondAttribute(const FondAttribute &other) :
+TextAttribute::TextAttribute(const TextAttribute &other) :
     d(new Private(other.d))
 {
 
@@ -93,7 +93,7 @@ FondAttribute::FondAttribute(const FondAttribute &other) :
  * @param backgrColor       Fond background color.
  * @param effect            Fond effect.
  */
-FondAttribute::FondAttribute(const FondAttribute::Color color, const FondAttribute::Color backgrColor, const FondAttribute::Effect effect) :
+TextAttribute::TextAttribute(const TextAttribute::Color color, const TextAttribute::Color backgrColor, const TextAttribute::Effect effect) :
     d(new Private(color, backgrColor, effect))
 {
 
@@ -103,7 +103,7 @@ FondAttribute::FondAttribute(const FondAttribute::Color color, const FondAttribu
  * Getter
  * @return
  */
-FondAttribute::Color FondAttribute::fondColor() const
+TextAttribute::Color TextAttribute::fondColor() const
 {
     return d->m_fondColor;
 }
@@ -112,7 +112,7 @@ FondAttribute::Color FondAttribute::fondColor() const
  * Setter
  * @param color
  */
-void FondAttribute::setFondColor(const FondAttribute::Color color)
+void TextAttribute::setFondColor(const TextAttribute::Color color)
 {
     d->m_fondColor = color;
 }
@@ -121,7 +121,7 @@ void FondAttribute::setFondColor(const FondAttribute::Color color)
  * Getter
  * @return
  */
-FondAttribute::Color FondAttribute::backgroundColor() const
+TextAttribute::Color TextAttribute::backgroundColor() const
 {
     return d->m_backgrColor;
 }
@@ -130,7 +130,7 @@ FondAttribute::Color FondAttribute::backgroundColor() const
  * Setter
  * @param backgrColor
  */
-void FondAttribute::setBackgroundColor(const Color backgrColor)
+void TextAttribute::setBackgroundColor(const Color backgrColor)
 {
     d->m_backgrColor = backgrColor;
 }
@@ -139,7 +139,7 @@ void FondAttribute::setBackgroundColor(const Color backgrColor)
  * Getter
  * @return
  */
-FondAttribute::Effect FondAttribute::fondEffect() const
+TextAttribute::Effect TextAttribute::fondEffect() const
 {
     return d->m_effect;
 }
@@ -148,7 +148,7 @@ FondAttribute::Effect FondAttribute::fondEffect() const
  * Setter
  * @param effect
  */
-void FondAttribute::setFondEffect(const FondAttribute::Effect effect)
+void TextAttribute::setFondEffect(const TextAttribute::Effect effect)
 {
     d->m_effect = effect;
 }
@@ -157,7 +157,7 @@ void FondAttribute::setFondEffect(const FondAttribute::Effect effect)
  * Get a string with the fond code which can be parsed from the console to configure fond.
  * @return
  */
-QString FondAttribute::fondCode() const
+QString TextAttribute::fondCode() const
 {
     QString code;
     if (d->m_effect == NORMAL) {
@@ -174,7 +174,7 @@ QString FondAttribute::fondCode() const
 /**
  * Set this FondAttribute object to standard values.
  */
-void FondAttribute::toStandard()
+void TextAttribute::toStandard()
 {
     Private val;
     d->setEqualTo(&val);
@@ -188,9 +188,9 @@ void FondAttribute::toStandard()
  * @param effect
  * @return
  */
-QString FondAttribute::fondCode(const FondAttribute::Color color, const Color backgrColor, const FondAttribute::Effect effect)
+QString TextAttribute::fondCode(const TextAttribute::Color color, const Color backgrColor, const TextAttribute::Effect effect)
 {
-    FondAttribute attribute(color, backgrColor, effect);
+    TextAttribute attribute(color, backgrColor, effect);
 
     return attribute.fondCode();
 }
@@ -201,7 +201,7 @@ QString FondAttribute::fondCode(const FondAttribute::Color color, const Color ba
  * @param other         The FondAttribute object to assign to this.
  * @return
  */
-FondAttribute& FondAttribute::operator = (const FondAttribute& other)
+TextAttribute& TextAttribute::operator = (const TextAttribute& other)
 {
     d->setEqualTo(other.d);
 

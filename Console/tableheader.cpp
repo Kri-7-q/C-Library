@@ -6,14 +6,14 @@ public:
     Private();
 
     QList<ColumnHeader> m_columnList;
-    FondAttribute m_fondAttribute;
+    TextAttribute m_fondAttribute;
 };
 
 /**
  * Standard constructor class Private of TableHeader.
  */
 TableHeader::Private::Private() :
-    m_fondAttribute(FondAttribute::BLUE)
+    m_fondAttribute(TextAttribute::BLUE)
 {
 
 }
@@ -163,7 +163,7 @@ int TableHeader::size() const
  * Getter
  * @return
  */
-FondAttribute TableHeader::fondAttribute() const
+TextAttribute TableHeader::fondAttribute() const
 {
     return d->m_fondAttribute;
 }
@@ -172,7 +172,7 @@ FondAttribute TableHeader::fondAttribute() const
  * Setter
  * @param fondAttribute
  */
-void TableHeader::setFondAttribute(const FondAttribute &fondAttribute)
+void TableHeader::setFondAttribute(const TextAttribute &fondAttribute)
 {
     d->m_fondAttribute = fondAttribute;
 }
@@ -181,7 +181,7 @@ void TableHeader::setFondAttribute(const FondAttribute &fondAttribute)
  * Setter
  * @param color
  */
-void TableHeader::setFondColor(const FondAttribute::Color color)
+void TableHeader::setFondColor(const TextAttribute::Color color)
 {
     d->m_fondAttribute.setFondColor(color);
 }
@@ -190,7 +190,7 @@ void TableHeader::setFondColor(const FondAttribute::Color color)
  * Setter
  * @param color
  */
-void TableHeader::setBackgrColor(const FondAttribute::Color color)
+void TableHeader::setBackgrColor(const TextAttribute::Color color)
 {
     d->m_fondAttribute.setBackgroundColor(color);
 }

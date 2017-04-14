@@ -3,7 +3,7 @@
 
 #include "console_global.h"
 #include "columnheader.h"
-#include "fondattribute.h"
+#include "textattribute.h"
 
 class CONSOLESHARED_EXPORT TableHeader
 {
@@ -20,10 +20,10 @@ public:
     void setWidth(const int column, const quint16 width) const;
     int totalWidth() const;
     int size() const;
-    FondAttribute fondAttribute() const;
-    void setFondAttribute(const FondAttribute& fondAttribute);
-    void setFondColor(const FondAttribute::Color color);
-    void setBackgrColor(const FondAttribute::Color color);
+    TextAttribute fondAttribute() const;
+    void setFondAttribute(const TextAttribute& fondAttribute);
+    void setFondColor(const TextAttribute::Color color);
+    void setBackgrColor(const TextAttribute::Color color);
 
 private:
     class Private;

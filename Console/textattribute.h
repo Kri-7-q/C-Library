@@ -4,16 +4,17 @@
 #include "console_global.h"
 #include <QString>
 
-class CONSOLESHARED_EXPORT FondAttribute
+class CONSOLESHARED_EXPORT TextAttribute
 {
 public:   
     enum Effect { NORMAL, BOLD, ITALIC, UNDERLINED = 4, BLINKING, INVERSE = 7 };
     enum Color { BLACK = 30, RED, GREEN, BROWN, BLUE, PURPLE, CYAN, GRAY, STANDARD = 39 };
+    enum TextAlign { LEFT, CENTER, RIGTH };
 
     // Constructor
-    FondAttribute();
-    FondAttribute(const FondAttribute& other);
-    FondAttribute(const Color color, const Color backgrColor = STANDARD, const Effect effect = NORMAL);
+    TextAttribute();
+    TextAttribute(const TextAttribute& other);
+    TextAttribute(const Color color, const Color backgrColor = STANDARD, const Effect effect = NORMAL);
 
     // Getter and Setter
     Color fondColor() const;
@@ -31,7 +32,7 @@ public:
     static QString fondCode(const Color color, const Color backgrColor, const Effect effect);
 
     // Operator overload
-    FondAttribute& operator = (const FondAttribute& other);
+    TextAttribute& operator = (const TextAttribute& other);
 
 private:
     class Private;
