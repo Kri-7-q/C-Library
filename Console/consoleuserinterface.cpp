@@ -12,14 +12,16 @@ public:
     // Functions
     void setTableColumnWidth(const QList<QVariantMap>& valueList, TableHeader& header) const;
     void printTableHeader(const TableHeader &tableHeader);
-    QString textFieldString(const QString& text, const quint16 width, const TextAttribute::TextAlign align = TextAttribute::LEFT) const;
+    QString textFieldString(const QString& text, const quint16 width, const TextStyle::TextAlign align = TextStyle::Left) const;
     QString tableLine(const QVariantMap& valueMap, const TableHeader& header) const;
     inline QString frameLine(const TableHeader& header) const;
     quint16 columnWidthOf(const QStringList& list) const;
     quint16 columnWidthOf(const QVariantList& list) const;
 
     // Members
-    TextAttribute m_fondAttribute;
+    ConsoleFont m_fondAttribute;
+    ConsoleFont m_fontColorBoolTrue;
+    ConsoleFont m_fontColorBoolFalse;
     QTextStream m_outStream;
 
 private:
@@ -30,6 +32,8 @@ private:
  * Standard constructor of class Private.
  */
 ConsoleUserInterface::Private::Private() :
+    m_fontColorBoolTrue(TextStyle::Green),
+    m_fontColorBoolFalse(TextStyle::Red),
     m_outStream(stdout)
 {
 
@@ -63,7 +67,7 @@ void ConsoleUserInterface::Private::printTableHeader(const TableHeader& tableHea
         QString field = textFieldString(tableHeader.headerText(index), tableHeader.width(index));
         header.append(' ').append(field).append(" |");
     }
-    QString standardFond = TextAttribute().fondCode();
+    QString standardFond = ConsoleFont().fondCode();
     QString headerFond = tableHeader.fondAttribute().fondCode();
     m_outStream << headerFond << line << standardFond << endl;
     m_outStream << headerFond << header << standardFond << endl;
@@ -78,7 +82,7 @@ void ConsoleUserInterface::Private::printTableHeader(const TableHeader& tableHea
  * @param width     The field width.
  * @return          A string which represent a table field.
  */
-QString ConsoleUserInterface::Private::textFieldString(const QString &text, const quint16 width, const TextAttribute::TextAlign align) const
+QString ConsoleUserInterface::Private::textFieldString(const QString &text, const quint16 width, const TextStyle::TextAlign align) const
 {
     if (width < 1) {
         return QString();
@@ -90,16 +94,16 @@ QString ConsoleUserInterface::Private::textFieldString(const QString &text, cons
     QString space(numSpace, ' ');
     QString textField(text);
     switch (align) {
-    case TextAttribute::LEFT:
+    case TextStyle::Left:
         textField.append(space);
         break;
-    case TextAttribute::CENTER: {
+    case TextStyle::Center: {
         int leftSpace = numSpace / 2;
         int rightSpace = leftSpace + numSpace % 2;
         textField = QString(leftSpace, ' ').append(textField).append(QString(rightSpace, ' '));
         break;
     }
-    case TextAttribute::RIGTH:
+    case TextStyle::Rigth:
         textField = space.append(textField);
         break;
     }
@@ -224,7 +228,7 @@ ConsoleUserInterface::~ConsoleUserInterface()
  * Setter
  * @param background
  */
-void ConsoleUserInterface::setBackgroundColor(const TextAttribute::Color background)
+void ConsoleUserInterface::setBackgroundColor(const TextStyle::Color background)
 {
     d->m_fondAttribute.setBackgroundColor(background);
     d->m_outStream << d->m_fondAttribute.fondCode();
@@ -234,7 +238,7 @@ void ConsoleUserInterface::setBackgroundColor(const TextAttribute::Color backgro
  * Setter
  * @param forground
  */
-void ConsoleUserInterface::setFondColor(const TextAttribute::Color fondColor)
+void ConsoleUserInterface::setFondColor(const TextStyle::Color fondColor)
 {
     d->m_fondAttribute.setFondColor(fondColor);
     d->m_outStream << d->m_fondAttribute.fondCode();
@@ -244,7 +248,7 @@ void ConsoleUserInterface::setFondColor(const TextAttribute::Color fondColor)
  * Setter
  * @param effect
  */
-void ConsoleUserInterface::setFondEffect(const TextAttribute::Effect effect)
+void ConsoleUserInterface::setFondEffect(const TextStyle::Effect effect)
 {
     d->m_fondAttribute.setFondEffect(effect);
     d->m_outStream << d->m_fondAttribute.fondCode();
@@ -254,7 +258,7 @@ void ConsoleUserInterface::setFondEffect(const TextAttribute::Effect effect)
  * Getter
  * @return
  */
-TextAttribute::Color ConsoleUserInterface::backgroundColor() const
+TextStyle::Color ConsoleUserInterface::backgroundColor() const
 {
     return d->m_fondAttribute.backgroundColor();
 }
@@ -263,7 +267,7 @@ TextAttribute::Color ConsoleUserInterface::backgroundColor() const
  * Getter
  * @return
  */
-TextAttribute::Color ConsoleUserInterface::fondColor() const
+TextStyle::Color ConsoleUserInterface::fondColor() const
 {
     return d->m_fondAttribute.fondColor();
 }
@@ -272,9 +276,21 @@ TextAttribute::Color ConsoleUserInterface::fondColor() const
  * Getter
  * @return
  */
-TextAttribute::Effect ConsoleUserInterface::fondEffect() const
+TextStyle::Effect ConsoleUserInterface::fondEffect() const
 {
     return d->m_fondAttribute.fondEffect();
+}
+
+// Getter
+ConsoleFont &ConsoleUserInterface::fontColorBoolTrue() const
+{
+    return d->m_fontColorBoolTrue;
+}
+
+// Getter
+ConsoleFont &ConsoleUserInterface::fontColorBoolFalse() const
+{
+    return d->m_fontColorBoolFalse;
 }
 
 /**
@@ -301,7 +317,7 @@ void ConsoleUserInterface::println(const QString &text) const
  */
 void ConsoleUserInterface::printError(const QString &errorMsg) const
 {
-    QString fondAttributes = TextAttribute::fondCode(TextAttribute::RED, TextAttribute::STANDARD, TextAttribute::NORMAL);
+    QString fondAttributes = ConsoleFont::fondCode(TextStyle::Red, TextStyle::Standard, TextStyle::Normal);
     d->m_outStream << fondAttributes << errorMsg << d->m_fondAttribute.fondCode() << endl;
 }
 
@@ -311,7 +327,7 @@ void ConsoleUserInterface::printError(const QString &errorMsg) const
  */
 void ConsoleUserInterface::printWarning(const QString& warningMsg) const
 {
-    QString fondAttributes = TextAttribute::fondCode(TextAttribute::BROWN, TextAttribute::STANDARD, TextAttribute::NORMAL);
+    QString fondAttributes = ConsoleFont::fondCode(TextStyle::Brown, TextStyle::Standard, TextStyle::Normal);
     d->m_outStream << fondAttributes << warningMsg << d->m_fondAttribute.fondCode() << endl;
 }
 
@@ -321,7 +337,7 @@ void ConsoleUserInterface::printWarning(const QString& warningMsg) const
  */
 void ConsoleUserInterface::printSuccess(const QString &successMsg) const
 {
-    QString fondAttributes = TextAttribute::fondCode(TextAttribute::GREEN, TextAttribute::STANDARD, TextAttribute::NORMAL);
+    QString fondAttributes = ConsoleFont::fondCode(TextStyle::Green, TextStyle::Standard, TextStyle::Normal);
     d->m_outStream << fondAttributes << successMsg << d->m_fondAttribute.fondCode() << endl;
 }
 
@@ -348,7 +364,7 @@ void ConsoleUserInterface::printTable(const QList<QVariantMap> &valueList, const
  * @param width
  * @param align
  */
-void ConsoleUserInterface::printTextField(const QString &text, const quint16 width, const TextAttribute::TextAlign align) const
+void ConsoleUserInterface::printTextField(const QString &text, const quint16 width, const TextStyle::TextAlign align) const
 {
     d->m_outStream << d->textFieldString(text, width, align);
 }
@@ -364,12 +380,12 @@ void ConsoleUserInterface::printMap(const QVariantMap &variantMap) const
     QStringList keyList = variantMap.keys();
     quint16 headerWidth = d->columnWidthOf(keyList);
     quint16 valueWidth = d->columnWidthOf(variantMap.values());
-    QString colorBlue = TextAttribute::fondCode(TextAttribute::BLUE, TextAttribute::STANDARD, TextAttribute::NORMAL);
+    QString colorBlue = ConsoleFont::fondCode(TextStyle::Blue, TextStyle::Standard, TextStyle::Normal);
     QString standard = d->m_fondAttribute.fondCode();
     foreach (QString key, keyList) {
-        d->m_outStream << colorBlue << d->textFieldString(key + ':', headerWidth+2, TextAttribute::LEFT) << standard;
+        d->m_outStream << colorBlue << d->textFieldString(key + ':', headerWidth+2, TextStyle::Left) << standard;
         QString val = variantMap.value(key).toString();
-        d->m_outStream << d->textFieldString(val, valueWidth, TextAttribute::RIGTH) << endl;
+        d->m_outStream << d->textFieldString(val, valueWidth, TextStyle::Rigth) << endl;
     }
 }
 
@@ -391,7 +407,7 @@ ConsoleUserInterface& ConsoleUserInterface::operator << (const QString& text)
  * @param fondColor
  * @return
  */
-ConsoleUserInterface& ConsoleUserInterface::operator << (const TextAttribute::Color fondColor)
+ConsoleUserInterface& ConsoleUserInterface::operator << (const TextStyle::Color fondColor)
 {
     setFondColor(fondColor);
 
@@ -403,7 +419,7 @@ ConsoleUserInterface& ConsoleUserInterface::operator << (const TextAttribute::Co
  * @param effect
  * @return
  */
-ConsoleUserInterface& ConsoleUserInterface::operator << (const TextAttribute::Effect effect)
+ConsoleUserInterface& ConsoleUserInterface::operator << (const TextStyle::Effect effect)
 {
     setFondEffect(effect);
 
@@ -480,13 +496,12 @@ ConsoleUserInterface& ConsoleUserInterface::operator << (const char * const text
  */
 ConsoleUserInterface& ConsoleUserInterface::operator << (const ColorBool& boolean)
 {
-    QString color = TextAttribute::fondCode(TextAttribute::RED, TextAttribute::STANDARD, TextAttribute::NORMAL);
-    QString value("false");
     if (boolean == true) {
-        color = TextAttribute::fondCode(TextAttribute::GREEN, TextAttribute::STANDARD, TextAttribute::NORMAL);
-        value = QString("true");
+        d->m_outStream << d->m_fontColorBoolTrue.fondCode() << "true";
+    } else {
+        d->m_outStream << d->m_fontColorBoolFalse.fondCode() << "false";
     }
-    d->m_outStream << color << value << d->m_fondAttribute.fondCode();
+    d->m_outStream << d->m_fondAttribute.fondCode();
 
     return *this;
 }
@@ -496,8 +511,9 @@ ConsoleUserInterface& ConsoleUserInterface::operator << (const ColorBool& boolea
  * @param fondAttribute         Attributes to configure console fond.
  * @return
  */
-ConsoleUserInterface& ConsoleUserInterface::operator << (const TextAttribute& fondAttribute)
+ConsoleUserInterface& ConsoleUserInterface::operator << (const ConsoleFont& fondAttribute)
 {
+    d->m_fondAttribute = fondAttribute;
     d->m_outStream << fondAttribute.fondCode();
 
     return *this;

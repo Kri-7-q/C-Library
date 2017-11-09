@@ -1,26 +1,26 @@
-#include "textattribute.h"
+#include "consolefont.h"
 
 
-class TextAttribute::Private {
+class ConsoleFont::Private {
 public:
     Private();
     Private(const Private* other);
-    Private(const Color color, const Color backgrColor, const Effect effect);
+    Private(const TextStyle::Color color, const TextStyle::Color backgrColor, const TextStyle::Effect effect);
 
     void setEqualTo(const Private* const d);
 
-    Color m_fondColor;
-    Color m_backgrColor;
-    Effect m_effect;
+    TextStyle::Color m_fondColor;
+    TextStyle::Color m_backgrColor;
+    TextStyle::Effect m_effect;
 };
 
 /**
  * Standard constructor Private
  */
-TextAttribute::Private::Private() :
-    m_fondColor(STANDARD),
-    m_backgrColor(STANDARD),
-    m_effect(NORMAL)
+ConsoleFont::Private::Private() :
+    m_fondColor(TextStyle::Standard),
+    m_backgrColor(TextStyle::Standard),
+    m_effect(TextStyle::Normal)
 {
 
 }
@@ -29,7 +29,7 @@ TextAttribute::Private::Private() :
  * Copy constructor of class Private
  * @param other
  */
-TextAttribute::Private::Private(const TextAttribute::Private *other) :
+ConsoleFont::Private::Private(const ConsoleFont::Private *other) :
     m_fondColor(other->m_fondColor),
     m_backgrColor(other->m_backgrColor),
     m_effect(other->m_effect)
@@ -44,7 +44,7 @@ TextAttribute::Private::Private(const TextAttribute::Private *other) :
  * @param backgrColor
  * @param effect
  */
-TextAttribute::Private::Private(const Color color, const Color backgrColor, const Effect effect) :
+ConsoleFont::Private::Private(const TextStyle::Color color, const TextStyle::Color backgrColor, const TextStyle::Effect effect) :
     m_fondColor(color),
     m_backgrColor(backgrColor),
     m_effect(effect)
@@ -56,7 +56,7 @@ TextAttribute::Private::Private(const Color color, const Color backgrColor, cons
  * Setter
  * @param d
  */
-void TextAttribute::Private::setEqualTo(const TextAttribute::Private * const d)
+void ConsoleFont::Private::setEqualTo(const ConsoleFont::Private * const d)
 {
     m_fondColor = d->m_fondColor;
     m_backgrColor = d->m_backgrColor;
@@ -70,7 +70,7 @@ void TextAttribute::Private::setEqualTo(const TextAttribute::Private * const d)
 /**
  * Standard constructor FondAttribute
  */
-TextAttribute::TextAttribute() :
+ConsoleFont::ConsoleFont() :
     d(new Private())
 {
 
@@ -80,7 +80,7 @@ TextAttribute::TextAttribute() :
  * Copy constructor
  * @param other
  */
-TextAttribute::TextAttribute(const TextAttribute &other) :
+ConsoleFont::ConsoleFont(const ConsoleFont &other) :
     d(new Private(other.d))
 {
 
@@ -93,7 +93,7 @@ TextAttribute::TextAttribute(const TextAttribute &other) :
  * @param backgrColor       Fond background color.
  * @param effect            Fond effect.
  */
-TextAttribute::TextAttribute(const TextAttribute::Color color, const TextAttribute::Color backgrColor, const TextAttribute::Effect effect) :
+ConsoleFont::ConsoleFont(const TextStyle::Color color, const TextStyle::Color backgrColor, const TextStyle::Effect effect) :
     d(new Private(color, backgrColor, effect))
 {
 
@@ -103,7 +103,7 @@ TextAttribute::TextAttribute(const TextAttribute::Color color, const TextAttribu
  * Getter
  * @return
  */
-TextAttribute::Color TextAttribute::fondColor() const
+TextStyle::Color ConsoleFont::fondColor() const
 {
     return d->m_fondColor;
 }
@@ -112,7 +112,7 @@ TextAttribute::Color TextAttribute::fondColor() const
  * Setter
  * @param color
  */
-void TextAttribute::setFondColor(const TextAttribute::Color color)
+void ConsoleFont::setFondColor(const TextStyle::Color color)
 {
     d->m_fondColor = color;
 }
@@ -121,7 +121,7 @@ void TextAttribute::setFondColor(const TextAttribute::Color color)
  * Getter
  * @return
  */
-TextAttribute::Color TextAttribute::backgroundColor() const
+TextStyle::Color ConsoleFont::backgroundColor() const
 {
     return d->m_backgrColor;
 }
@@ -130,7 +130,7 @@ TextAttribute::Color TextAttribute::backgroundColor() const
  * Setter
  * @param backgrColor
  */
-void TextAttribute::setBackgroundColor(const Color backgrColor)
+void ConsoleFont::setBackgroundColor(const TextStyle::Color backgrColor)
 {
     d->m_backgrColor = backgrColor;
 }
@@ -139,7 +139,7 @@ void TextAttribute::setBackgroundColor(const Color backgrColor)
  * Getter
  * @return
  */
-TextAttribute::Effect TextAttribute::fondEffect() const
+TextStyle::Effect ConsoleFont::fondEffect() const
 {
     return d->m_effect;
 }
@@ -148,7 +148,7 @@ TextAttribute::Effect TextAttribute::fondEffect() const
  * Setter
  * @param effect
  */
-void TextAttribute::setFondEffect(const TextAttribute::Effect effect)
+void ConsoleFont::setFondEffect(const TextStyle::Effect effect)
 {
     d->m_effect = effect;
 }
@@ -157,10 +157,10 @@ void TextAttribute::setFondEffect(const TextAttribute::Effect effect)
  * Get a string with the fond code which can be parsed from the console to configure fond.
  * @return
  */
-QString TextAttribute::fondCode() const
+QString ConsoleFont::fondCode() const
 {
     QString code;
-    if (d->m_effect == NORMAL) {
+    if (d->m_effect == TextStyle::Normal) {
         QString pattern("\033[%1;%2m");
         code = pattern.arg(d->m_backgrColor + 10).arg(d->m_fondColor);
     } else {
@@ -174,7 +174,7 @@ QString TextAttribute::fondCode() const
 /**
  * Set this FondAttribute object to standard values.
  */
-void TextAttribute::toStandard()
+void ConsoleFont::toStandard()
 {
     Private val;
     d->setEqualTo(&val);
@@ -188,9 +188,9 @@ void TextAttribute::toStandard()
  * @param effect
  * @return
  */
-QString TextAttribute::fondCode(const TextAttribute::Color color, const Color backgrColor, const TextAttribute::Effect effect)
+QString ConsoleFont::fondCode(const TextStyle::Color color, const TextStyle::Color backgrColor, const TextStyle::Effect effect)
 {
-    TextAttribute attribute(color, backgrColor, effect);
+    ConsoleFont attribute(color, backgrColor, effect);
 
     return attribute.fondCode();
 }
@@ -201,7 +201,7 @@ QString TextAttribute::fondCode(const TextAttribute::Color color, const Color ba
  * @param other         The FondAttribute object to assign to this.
  * @return
  */
-TextAttribute& TextAttribute::operator = (const TextAttribute& other)
+ConsoleFont& ConsoleFont::operator = (const ConsoleFont& other)
 {
     d->setEqualTo(other.d);
 

@@ -28,7 +28,8 @@ SOURCES += optiondefinition.cpp \
     colorbool.cpp \
     tableheader.cpp \
     columnheader.cpp \
-    textattribute.cpp
+    Exception/interfaceexception.cpp \
+    consolefont.cpp
 
 HEADERS += console_global.h \
     optiondefinition.h \
@@ -37,7 +38,8 @@ HEADERS += console_global.h \
     colorbool.h \
     tableheader.h \
     columnheader.h \
-    textattribute.h
+    Exception/interfaceexception.h \
+    consolefont.h
 
 # ---------------------------------------------------------
 # Make install (distinguish between debug and release).

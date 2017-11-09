@@ -1,19 +1,20 @@
 #include "tableheader.h"
 #include <QList>
+#include "Exception/interfaceexception.h"
 
 class TableHeader::Private {
 public:
     Private();
 
     QList<ColumnHeader> m_columnList;
-    TextAttribute m_fondAttribute;
+    ConsoleFont m_fondAttribute;
 };
 
 /**
  * Standard constructor class Private of TableHeader.
  */
 TableHeader::Private::Private() :
-    m_fondAttribute(TextAttribute::BLUE)
+    m_fondAttribute(TextStyle::Blue)
 {
 
 }
@@ -46,10 +47,26 @@ TableHeader::~TableHeader()
  * @param mapKey            A key to a QVariantMap value.
  * @param width             Columns width. Is optional and found automatically if not given.
  */
-void TableHeader::addColumn(const QString &headerText, const QString &mapKey, const quint16 width)
+void TableHeader::addColumn(const QString &headerText, const QString &mapKey, const quint16 width, const TextStyle::TextAlign align)
 {
-    ColumnHeader column(headerText, mapKey, width);
+    ColumnHeader column(headerText, mapKey, width, align);
     d->m_columnList << column;
+}
+
+/**
+ * Getter
+ * @param column
+ * @return
+ */
+ColumnHeader &TableHeader::column(const int column) const
+{
+    if (column < 0 || column >= d->m_columnList.size()) {
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("column()"),
+                                 QString("Column number %1 does not exist !").arg(column));
+    }
+
+    return d->m_columnList[column];
 }
 
 /**
@@ -60,7 +77,9 @@ void TableHeader::addColumn(const QString &headerText, const QString &mapKey, co
 QString TableHeader::headerText(const int column) const
 {
     if (column < 0 || column >= d->m_columnList.size()) {
-        return QString();
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("headerText()"),
+                                 QString("Column number %1 does not exist !").arg(column));
     }
 
     return d->m_columnList[column].headerText();
@@ -75,7 +94,9 @@ QString TableHeader::headerText(const int column) const
 void TableHeader::setHeaderText(const int column, const QString &headerText) const
 {
     if (column < 0 || column >= d->m_columnList.size()) {
-        return;
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("setHeaderText()"),
+                                 QString("Column number %1 does not exist !").arg(column));
     }
     d->m_columnList[column].setHeaderText(headerText);
 }
@@ -88,7 +109,9 @@ void TableHeader::setHeaderText(const int column, const QString &headerText) con
 QString TableHeader::mapKey(const int column) const
 {
     if (column < 0 || column >= d->m_columnList.size()) {
-        return QString();
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("mapKey()"),
+                                 QString("Column number %1 does not exist !").arg(column));
     }
 
     return d->m_columnList[column].mapKey();
@@ -102,7 +125,9 @@ QString TableHeader::mapKey(const int column) const
 void TableHeader::setMapKey(const int column, const QString &mapKey) const
 {
     if (column < 0 || column >= d->m_columnList.size()) {
-        return;
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("setMapKey()"),
+                                 QString("Column number %1 does not exist !").arg(column));
     }
 
     return d->m_columnList[column].setMapKey(mapKey);
@@ -113,10 +138,12 @@ void TableHeader::setMapKey(const int column, const QString &mapKey) const
  * @param column        The column number of table.
  * @return              The width of the column.
  */
-quint16 TableHeader::width(const int column) const
+quint32 TableHeader::width(const int column) const
 {
     if (column < 0 || column >= d->m_columnList.size()) {
-        return 0;
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("width()"),
+                                 QString("Column number %1 does not exist !").arg(column));
     }
 
     return d->m_columnList[column].columnWidth();
@@ -127,12 +154,45 @@ quint16 TableHeader::width(const int column) const
  * @param column        The column of which the width is to modify.
  * @param width         The new width of column.
  */
-void TableHeader::setWidth(const int column, const quint16 width) const
+void TableHeader::setWidth(const int column, const quint32 width) const
 {
     if (column < 0 || column >= d->m_columnList.size()) {
-        return;
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("setWidth()"),
+                                 QString("Column number %1 does not exist !").arg(column));
     }
     d->m_columnList[column].setColumnWidth(width);
+}
+
+/**
+ * Getter
+ * @param column
+ * @return
+ */
+TextStyle::TextAlign TableHeader::columnAlign(const int column) const
+{
+    if (column < 0 || column >= d->m_columnList.size()) {
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("columnAlign()"),
+                                 QString("Column number %1 does not exist !").arg(column));
+    }
+
+    return d->m_columnList[column].textAlign();
+}
+
+/**
+ * Setter
+ * @param column
+ * @param align
+ */
+void TableHeader::setColumnAlign(const int column, const TextStyle::TextAlign align)
+{
+    if (column < 0 || column >= d->m_columnList.size()) {
+        throw InterfaceException(QString("TableHeader"),
+                                 QString("setColumnAlign()"),
+                                 QString("Column number %1 does not exist !").arg(column));
+    }
+    d->m_columnList[column].setTextAlign(align);
 }
 
 /**
@@ -163,7 +223,7 @@ int TableHeader::size() const
  * Getter
  * @return
  */
-TextAttribute TableHeader::fondAttribute() const
+ConsoleFont TableHeader::fondAttribute() const
 {
     return d->m_fondAttribute;
 }
@@ -172,7 +232,7 @@ TextAttribute TableHeader::fondAttribute() const
  * Setter
  * @param fondAttribute
  */
-void TableHeader::setFondAttribute(const TextAttribute &fondAttribute)
+void TableHeader::setFondAttribute(const ConsoleFont &fondAttribute)
 {
     d->m_fondAttribute = fondAttribute;
 }
@@ -181,7 +241,7 @@ void TableHeader::setFondAttribute(const TextAttribute &fondAttribute)
  * Setter
  * @param color
  */
-void TableHeader::setFondColor(const TextAttribute::Color color)
+void TableHeader::setFondColor(const TextStyle::Color color)
 {
     d->m_fondAttribute.setFondColor(color);
 }
@@ -190,7 +250,7 @@ void TableHeader::setFondColor(const TextAttribute::Color color)
  * Setter
  * @param color
  */
-void TableHeader::setBackgrColor(const TextAttribute::Color color)
+void TableHeader::setBackgrColor(const TextStyle::Color color)
 {
     d->m_fondAttribute.setBackgroundColor(color);
 }
