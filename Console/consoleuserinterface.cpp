@@ -12,8 +12,7 @@ public:
     // Functions
     void setTableColumnWidth(const QList<QVariantMap>& valueList, TableHeader& header) const;
     void printTableHeader(const TableHeader &tableHeader);
-    QString textFieldString(const QString& text, const quint16 width, const TextStyle::TextAlign align = TextStyle::Left) const;
-    QString tableLine(const QVariantMap& valueMap, const TableHeader& header) const;
+    void tableLine(const QVariantMap& valueMap, const TableHeader& header);
     inline QString frameLine(const TableHeader& header) const;
     quint16 columnWidthOf(const QStringList& list) const;
     quint16 columnWidthOf(const QVariantList& list) const;
@@ -62,53 +61,18 @@ void ConsoleUserInterface::Private::setTableColumnWidth(const QList<QVariantMap>
 void ConsoleUserInterface::Private::printTableHeader(const TableHeader& tableHeader)
 {
     QString line = frameLine(tableHeader);
-    QString header("|");
+    m_outStream << tableHeader.fondAttribute().fondCode() << line << endl << '|';
     for (int index=0; index<tableHeader.size(); ++index) {
-        QString field = textFieldString(tableHeader.headerText(index), tableHeader.width(index));
-        header.append(' ').append(field).append(" |");
+        //QString field = textFieldString(tableHeader.headerText(index), tableHeader.width(index));
+        //header.append(' ').append(field).append(" |");
+        m_outStream << ' ';
+        m_outStream.setFieldWidth( static_cast<int>(tableHeader.width(index)) );
+        m_outStream.setFieldAlignment( static_cast<QTextStream::FieldAlignment>(tableHeader.columnAlign(index)) );
+        m_outStream << tableHeader.headerText(index);
+        m_outStream.setFieldWidth(0);
+        m_outStream << " |";
     }
-    QString standardFond = ConsoleFont().fondCode();
-    QString headerFond = tableHeader.fondAttribute().fondCode();
-    m_outStream << headerFond << line << standardFond << endl;
-    m_outStream << headerFond << header << standardFond << endl;
-    m_outStream << headerFond << line << standardFond << endl;
-}
-
-/**
- * Format the text to a table field.
- * If text is longer than the field width then the text will be cut to width.
- * Otherwise the text string is filled with space to get the field width.
- * @param text      The field text.
- * @param width     The field width.
- * @return          A string which represent a table field.
- */
-QString ConsoleUserInterface::Private::textFieldString(const QString &text, const quint16 width, const TextStyle::TextAlign align) const
-{
-    if (width < 1) {
-        return QString();
-    }
-    if (text.length() >= width) {
-        return text.left(width);
-    }
-    int numSpace = width - text.length();
-    QString space(numSpace, ' ');
-    QString textField(text);
-    switch (align) {
-    case TextStyle::Left:
-        textField.append(space);
-        break;
-    case TextStyle::Center: {
-        int leftSpace = numSpace / 2;
-        int rightSpace = leftSpace + numSpace % 2;
-        textField = QString(leftSpace, ' ').append(textField).append(QString(rightSpace, ' '));
-        break;
-    }
-    case TextStyle::Rigth:
-        textField = space.append(textField);
-        break;
-    }
-
-    return textField;
+    m_outStream << endl << line << endl << m_fondAttribute.fondCode();
 }
 
 /**
@@ -117,17 +81,20 @@ QString ConsoleUserInterface::Private::textFieldString(const QString &text, cons
  * @param header        A table header object.
  * @return              A printable string containing all values in fields.
  */
-QString ConsoleUserInterface::Private::tableLine(const QVariantMap &valueMap, const TableHeader &header) const
+void ConsoleUserInterface::Private::tableLine(const QVariantMap &valueMap, const TableHeader &header)
 {
-    QString line("|");
+    m_outStream << '|';
     for (int index=0; index<header.size(); ++index) {
         QString key = header.mapKey(index);
         QString value = valueMap.value(key, QVariant()).toString();
-        QString field = textFieldString(value, header.width(index));
-        line.append(' ').append(field).append(" |");
+        m_outStream << ' ';
+        m_outStream.setFieldWidth( static_cast<int>(header.width(index)) );
+        m_outStream.setFieldAlignment( static_cast<QTextStream::FieldAlignment>(header.columnAlign(index)) );
+        m_outStream << value;
+        m_outStream.setFieldWidth(0);
+        m_outStream << " |";
     }
-
-    return line;
+    m_outStream << endl;
 }
 
 /**
@@ -352,7 +319,7 @@ void ConsoleUserInterface::printTable(const QList<QVariantMap> &valueList, const
     d->setTableColumnWidth(valueList, const_cast<TableHeader&>(header));
     d->printTableHeader(header);
     for (int index=0; index<valueList.size(); ++index) {
-        d->m_outStream << d->tableLine(valueList[index], header) << endl;;
+        d->tableLine(valueList[index], header);
     }
     d->m_outStream << d->frameLine(header) << endl;
 }
@@ -366,7 +333,10 @@ void ConsoleUserInterface::printTable(const QList<QVariantMap> &valueList, const
  */
 void ConsoleUserInterface::printTextField(const QString &text, const quint16 width, const TextStyle::TextAlign align) const
 {
-    d->m_outStream << d->textFieldString(text, width, align);
+    d->m_outStream.setFieldAlignment( static_cast<QTextStream::FieldAlignment>(align) );
+    d->m_outStream.setFieldWidth(width);
+    d->m_outStream << text;
+    d->m_outStream.setFieldWidth(0);
 }
 
 /**
@@ -380,12 +350,17 @@ void ConsoleUserInterface::printMap(const QVariantMap &variantMap) const
     QStringList keyList = variantMap.keys();
     quint16 headerWidth = d->columnWidthOf(keyList);
     quint16 valueWidth = d->columnWidthOf(variantMap.values());
-    QString colorBlue = ConsoleFont::fondCode(TextStyle::Blue, TextStyle::Standard, TextStyle::Normal);
-    QString standard = d->m_fondAttribute.fondCode();
     foreach (QString key, keyList) {
-        d->m_outStream << colorBlue << d->textFieldString(key + ':', headerWidth+2, TextStyle::Left) << standard;
+        d->m_outStream << ConsoleFont::fondCode(TextStyle::Blue, TextStyle::Standard, TextStyle::Normal);
+        d->m_outStream.setFieldWidth(headerWidth+2);
+        d->m_outStream.setFieldAlignment( static_cast<QTextStream::FieldAlignment>(TextStyle::Left) );
+        d->m_outStream << key << ':' << d->m_fondAttribute.fondCode();
         QString val = variantMap.value(key).toString();
-        d->m_outStream << d->textFieldString(val, valueWidth, TextStyle::Rigth) << endl;
+        d->m_outStream.setFieldWidth(valueWidth);
+        d->m_outStream.setFieldAlignment( static_cast<QTextStream::FieldAlignment>(TextStyle::Rigth) );
+        d->m_outStream << val;
+        d->m_outStream.setFieldWidth(0);
+        d->m_outStream << endl;
     }
 }
 
