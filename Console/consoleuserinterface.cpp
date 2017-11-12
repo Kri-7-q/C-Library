@@ -46,11 +46,10 @@ ConsoleUserInterface::Private::Private() :
 void ConsoleUserInterface::Private::setTableColumnWidth(const QList<QVariantMap> &valueList, TableHeader &header) const
 {
     for (quint16 index=0; index<header.size(); ++index) {
-        if (header.width(index) > 0) {
-            continue;
+        if (header.width(index) < 1) {
+            quint16 width = tableColumnWidth(valueList, header.mapKey(index));
+            header.setWidth(index, width);
         }
-        quint16 width = tableColumnWidth(valueList, header.mapKey(index));
-        header.setWidth(index, width);
     }
 }
 
@@ -104,7 +103,8 @@ void ConsoleUserInterface::Private::tableLine(const QVariantMap &valueMap, const
  */
 QString ConsoleUserInterface::Private::frameLine(const TableHeader &header) const
 {
-    int width = 2 + 2 * header.size() + header.totalWidth() + 3;
+    // '|' + content + (' | ' * numColumns)         << One space to much. Frame at the end not needed. >>
+    int width = 1 + 3 * header.size() + header.totalWidth();
 
     return QString(width, '-');
 }
